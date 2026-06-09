@@ -1,0 +1,115 @@
+/* ===== GENEL STİL ===== */
+* { box-sizing: border-box; }
+
+body {
+    font-family: 'Arial', sans-serif;
+    font-size: 10px;
+    background-color: #c8c8c8;
+    margin: 0;
+    padding: 20px;
+}
+
+/* ===== TİPOGRAFİ ===== */
+h1  { font-size: 14px; text-align: center; margin: 0; line-height: 1.2; }
+.small-text  { font-size: 9px; }
+.center      { text-align: center; }
+.bold        { font-weight: bold; }
+.radio-item  { margin-right: 10px; white-space: nowrap; display: inline-block; }
+.table-assessment th,
+.table-assessment td { font-size: 9px; padding: 3px; }
+.vertical-th   { vertical-align: bottom; text-align: center; padding: 5px 2px !important; }
+.vertical-text {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    white-space: nowrap;
+    display: inline-block;
+    font-size: 8px;
+    line-height: 1;
+}
+
+/* ===== TABLO ===== */
+table { width: 100%; border-collapse: collapse; margin-bottom: 5px; margin-top: 5px; }
+th, td { border: 1px solid #000; padding: 2px 4px; vertical-align: middle; }
+
+/* ===== ANA RAPOR KAPSAYICI (EKRAN - A4 GÖRÜNÜMü) ===== */
+.main-report-table {
+    width: 210mm;
+    margin: 0 auto;
+    border-collapse: collapse;
+    background: white;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+/* ===== SAYFA DİVLERİ – Ekranda A4 sayfası görünümü ===== */
+.page {
+    width: 100%;
+    min-height: 277mm;        /* A4 yüksekliği - kenar boşlukları */
+    padding: 4mm 6mm;
+    position: relative;
+    /* Sayfalar arası görsel ayırıcı */
+    border-bottom: 4px solid #c8c8c8;
+}
+.page:last-child {
+    border-bottom: none;
+}
+
+/* Sayfa sonu için yardımcı sınıf (eskiyle uyum) */
+.page-break { page-break-after: always; }
+
+/* JS ile eklenen footer artık kullanılmıyor */
+.print-footer { display: none !important; }
+
+/* ===== YAZDIR – BASKI STİLLERİ ===== */
+@media print {
+
+    /* CSS Page Counter ile sayfa numaralandırma – Chrome 118+ destekli */
+    @page {
+        size: A4 portrait;
+        margin: 5mm 5mm 13mm 5mm;
+        @bottom-center {
+            content: "Sayfa " counter(page) " / " counter(pages);
+            font-size: 9pt;
+            font-family: Arial, sans-serif;
+            color: #333;
+        }
+    }
+
+    body {
+        background: none;
+        margin: 0;
+        padding: 0;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* Ekran gölgesi ve kenarlık baskıda gözükmesin */
+    .main-report-table {
+        width: 195mm;
+        border: none;
+        border-collapse: collapse;
+        margin: 0 auto;
+        box-shadow: none;
+        background: transparent;
+    }
+
+    .main-report-table > thead > tr > td,
+    .main-report-table > tbody > tr > td {
+        border: none !important;
+        padding: 0;
+    }
+
+    /* Başlık her sayfada tekrar etsin */
+    thead { display: table-header-group; }
+    tfoot { display: table-footer-group; }
+
+    /* Sayfa divleri baskıda sıfırlansın */
+    .page {
+        min-height: auto;
+        padding: 0;
+        border-bottom: none;
+        page-break-inside: auto;
+    }
+
+    .no-print  { display: none !important; }
+    .print-footer { display: none !important; }
+}

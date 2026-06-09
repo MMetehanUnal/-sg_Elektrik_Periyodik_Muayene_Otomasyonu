@@ -1,0 +1,211 @@
+:root {
+    --primary-color: #4361ee;
+    --secondary-color: #3f37c9;
+    --bg-light: #f8f9fc;
+    --sidebar-bg: #ffffff;
+    --text-main: #2d3436;
+    --text-muted: #636e72;
+    --nav-height: 75px;
+    /* Increased to avoid overlap */
+    --sidebar-width: 280px;
+}
+
+body {
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-light);
+    color: var(--text-main);
+    overflow-x: hidden;
+}
+
+/* Ensure body respects fixed navbar height when logged in */
+body.logged-in {
+    padding-top: var(--nav-height);
+}
+
+/* Navbar Tuning */
+.navbar {
+    height: var(--nav-height);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%) !important;
+    z-index: 1100;
+    /* Higher than sidebar */
+    padding-top: 0;
+    padding-bottom: 0;
+    line-height: normal;
+}
+
+.navbar-brand {
+    font-size: 1.25rem;
+    letter-spacing: 0.5px;
+}
+
+.avatar-circle {
+    width: 32px;
+    height: 32px;
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+.institution-badge {
+    transition: all 0.3s;
+}
+
+.institution-badge:hover {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Layout */
+.main-wrapper {
+    display: flex;
+    min-height: calc(100vh - var(--nav-height));
+    width: 100%;
+}
+
+/* Sidebar Styling */
+.sidebar {
+    width: var(--sidebar-width);
+    background-color: var(--sidebar-bg);
+    position: fixed;
+    top: var(--nav-height);
+    left: 0;
+    bottom: 0;
+    z-index: 1050;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto;
+    border-right: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.sidebar.collapsed {
+    margin-left: calc(-1 * var(--sidebar-width));
+}
+
+.nav-section-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    padding-left: 15px;
+    letter-spacing: 1px;
+}
+
+/* Sidebar Links (Option 3: Card-like & Dynamic) */
+.side-link {
+    color: var(--text-main);
+    padding: 12px 15px;
+    margin: 4px 10px;
+    border-radius: 10px;
+    font-weight: 500;
+    transition: all 0.3s;
+    display: block;
+    text-decoration: none;
+}
+
+.side-link i {
+    width: 24px;
+    transition: transform 0.3s;
+}
+
+.side-link:hover {
+    background-color: rgba(67, 97, 238, 0.08);
+    color: var(--primary-color);
+    transform: translateX(5px);
+}
+
+.side-link:hover i {
+    transform: scale(1.2);
+}
+
+.side-link.active {
+    background: linear-gradient(90deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    color: white !important;
+    box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
+}
+
+.side-link.active i {
+    color: white !important;
+}
+
+.side-link-sub {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    padding: 8px 15px 8px 45px;
+    border-radius: 8px;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: block;
+}
+
+.side-link-sub:hover {
+    color: var(--primary-color);
+    background-color: rgba(67, 97, 238, 0.05);
+}
+
+/* Content Area */
+.content {
+    flex: 1;
+    margin-left: var(--sidebar-width);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    background-color: var(--bg-light);
+    width: 100%;
+}
+
+.content.expanded {
+    margin-left: 0;
+}
+
+/* UI Components Professionalism */
+.card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.card-header {
+    background-color: transparent;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 1.25rem;
+    font-weight: 600;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    border-radius: 10px;
+    padding: 8px 20px;
+    font-weight: 500;
+    box-shadow: 0 4px 10px rgba(67, 97, 238, 0.2);
+}
+
+.btn-primary:hover {
+    background-color: var(--secondary-color);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 15px rgba(67, 97, 238, 0.3);
+}
+
+/* Animation Utilities */
+.hover-opacity:hover {
+    opacity: 0.8;
+}
+
+@media (max-width: 991.98px) {
+    .sidebar {
+        margin-left: calc(-1 * var(--sidebar-width));
+        top: var(--nav-height);
+        /* Maintain separation on mobile */
+    }
+
+    .sidebar.active {
+        margin-left: 0;
+    }
+
+    .content {
+        margin-left: 0;
+    }
+}
