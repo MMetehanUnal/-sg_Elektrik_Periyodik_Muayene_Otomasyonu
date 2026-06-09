@@ -140,149 +140,29 @@ chmod -R 755 htdocs/uploads/
 
 ## 🗄️ Veritabanı Kurulumu
 
-`factory_automation` adında bir MySQL veritabanı oluşturun ve aşağıdaki tabloları oluşturun:
+Projenin tüm veritabanı şeması [`database/schema.sql`](database/schema.sql) dosyasında yer almaktadır. Bu dosya hiçbir kullanıcı verisi içermez, yalnızca tablo yapılarını ve varsayılan sistem ayarlarını barındırır.
 
-```sql
-CREATE DATABASE IF NOT EXISTS factory_automation
-  DEFAULT CHARACTER SET utf8mb4
-  DEFAULT COLLATE utf8mb4_general_ci;
+### Hızlı Kurulum
 
-USE factory_automation;
-
--- Kullanıcılar
-CREATE TABLE users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(50) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
-    role ENUM('admin', 'user') DEFAULT 'user',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Kurumlar / Tesisler
-CREATE TABLE institutions (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    firma_adi VARCHAR(255) NOT NULL,
-    adresi TEXT,
-    sgk_sicil_no VARCHAR(50),
-    il_kodu VARCHAR(2) DEFAULT '01',
-    kurum_kodu VARCHAR(3),
-    isg_katip_id VARCHAR(100),
-    report_date DATE,
-    start_date DATETIME,
-    end_date DATETIME,
-    next_control_date DATE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id)
-);
-
--- Yetkili Kişiler
-CREATE TABLE authorized_persons (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    adi_soyadi VARCHAR(255) NOT NULL,
-    meslegi VARCHAR(255),
-    kayit_no VARCHAR(100),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Ölçüm Cihazları
-CREATE TABLE measurement_devices (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    device_name VARCHAR(255) NOT NULL,
-    serial_no VARCHAR(100),
-    cal_date DATE,
-    validity_date DATE,
-    cal_no VARCHAR(100),
-    is_thermal_camera TINYINT(1) DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id)
-);
-
--- Sistem Ayarları
-CREATE TABLE system_settings (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    setting_key VARCHAR(100) NOT NULL UNIQUE,
-    setting_value TEXT,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-
--- Yüklenen Logolar
-CREATE TABLE uploaded_logos (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    filename VARCHAR(255) NOT NULL,
-    original_name VARCHAR(255) NOT NULL,
-    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Topraklama Raporları
-CREATE TABLE grounding_reports (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    kurum_id INT NOT NULL,
-    report_no VARCHAR(100),
-    report_date DATE,
-    control_reason VARCHAR(255),
-    result VARCHAR(50),
-    authorized_person_id INT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (kurum_id) REFERENCES institutions(id),
-    FOREIGN KEY (authorized_person_id) REFERENCES authorized_persons(id)
-);
-
--- İç Tesisat Raporları
-CREATE TABLE internal_installation_reports (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    kurum_id INT NOT NULL,
-    report_no VARCHAR(100),
-    report_date DATE,
-    control_reason VARCHAR(255),
-    result VARCHAR(50),
-    authorized_person_id INT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (kurum_id) REFERENCES institutions(id),
-    FOREIGN KEY (authorized_person_id) REFERENCES authorized_persons(id)
-);
-
--- Yıldırımdan Korunma Raporları
-CREATE TABLE lightning_protection_reports (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    kurum_id INT NOT NULL,
-    report_no VARCHAR(100),
-    report_date DATE,
-    control_reason VARCHAR(255),
-    result VARCHAR(50),
-    authorized_person_id INT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (kurum_id) REFERENCES institutions(id),
-    FOREIGN KEY (authorized_person_id) REFERENCES authorized_persons(id)
-);
-
--- Yangın Algılama Raporları
-CREATE TABLE fire_detection_reports (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    kurum_id INT NOT NULL,
-    report_no VARCHAR(100),
-    report_date DATE,
-    control_reason VARCHAR(255),
-    result VARCHAR(50),
-    authorized_person_id INT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (kurum_id) REFERENCES institutions(id),
-    FOREIGN KEY (authorized_person_id) REFERENCES authorized_persons(id)
-);
-
--- Varsayılan Admin Kullanıcısı (şifre: admin123)
-INSERT INTO users (username, password, role)
-VALUES ('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin');
-
--- Varsayılan Sistem Ayarları
-INSERT INTO system_settings (setting_key, setting_value) VALUES
-('logo_text', 'LOGO'),
-('logo_type', 'text'),
-('active_logo', '');
+```bash
+# MySQL komut satırından:
+mysql -u root -p < database/schema.sql
 ```
 
-> **⚠️ Not:** Varsayılan admin şifresi `admin123` olarak ayarlanmıştır. İlk girişten sonra mutlaka değiştirin. Yukarıdaki SQL şeması temel tabloları içermektedir; rapor detay tabloları (ölçüm sonuçları vb.) ilk rapor oluşturulduğunda otomatik olarak oluşturulabilir veya projedeki migration dosyaları ile eklenebilir.
+### Alternatif Kurulum (phpMyAdmin)
+
+1. **phpMyAdmin**'e giriş yapın
+2. **İçe Aktar** (Import) sekmesine tıklayın
+3. `database/schema.sql` dosyasını seçin ve çalıştırın
+
+### Varsayılan Giriş Bilgileri
+
+| Alan | Değer |
+|------|-------|
+| **Kullanıcı adı** | `admin` |
+| **Şifre** | `admin123` |
+
+> **⚠️ Güvenlik Uyarısı:** İlk girişten sonra varsayılan admin şifresini mutlaka değiştirin!
 
 ---
 
@@ -293,6 +173,10 @@ INSERT INTO system_settings (setting_key, setting_value) VALUES
 ├── 📄 README.md
 ├── 📄 .gitignore
 ├── 📄 .gitattributes
+├── 📄 LICENSE
+│
+├── database/                        # Veritabanı şeması
+│   └── schema.sql                   # Tüm tablo yapıları (veri içermez)
 │
 └── htdocs/                          # Web sunucu kök dizini
     ├── 📄 index.php                 # Ana giriş noktası (dashboard'a yönlendirir)
