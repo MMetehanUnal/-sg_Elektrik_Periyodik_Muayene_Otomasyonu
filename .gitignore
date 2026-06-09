@@ -1,0 +1,50 @@
+# ========================
+# IDE & Editör Dosyaları
+# ========================
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ========================
+# İşletim Sistemi Dosyaları
+# ========================
+*.log
+*.tmp
+*.bak
+*.cache
+
+# ========================
+# Veritabanı Yapılandırması (GÜVENLİK)
+# ========================
+# db.php dosyanız gerçek veritabanı kimlik bilgilerini içerir.
+# İlk commit'ten ÖNCE db.php'yi db.example.php olarak yeniden adlandırın
+# ve bu satırı aktif hale getirin:
+# htdocs/includes/db.php
+
+# ========================
+# Yüklenen Dosyalar (Kullanıcı Verileri)
+# ========================
+htdocs/uploads/logos/*
+htdocs/uploads/ic_tesisat/*
+!htdocs/uploads/logos/.gitkeep
+!htdocs/uploads/ic_tesisat/.gitkeep
+
+# ========================
+# Scratch / Geçici Dosyalar
+# ========================
+htdocs/scratch/
+
+# ========================
+# Bağımlılıklar
+# ========================
+/vendor/
+/node_modules/
+composer.lock
+package-lock.json
