@@ -28,6 +28,13 @@ desktop.ini
 htdocs/includes/db.php
 
 # ========================
+# API Yapılandırması (GÜVENLİK)
+# ========================
+# config.php dosyası JWT secret key içerir.
+# Yerine config.example.php kullanın.
+htdocs/api/config.php
+
+# ========================
 # Yüklenen Dosyalar (Kullanıcı Verileri)
 # ========================
 htdocs/uploads/logos/*
