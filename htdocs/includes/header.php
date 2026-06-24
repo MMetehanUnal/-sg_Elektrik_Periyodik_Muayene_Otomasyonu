@@ -191,6 +191,14 @@
                                     <i class="fas fa-file-pdf me-2"></i> Raporlar
                                 </a>
                             </li>
+
+                            <li class="nav-section-title mt-4 mb-2">EK ÖZELLİKLER</li>
+                            <li class="nav-item">
+                                <a class="nav-link side-link <?php echo in_array(basename($_SERVER['PHP_SELF']), ['genel_rapor.php', 'genel_rapor_duzenle.php']) ? 'active' : ''; ?>"
+                                    href="/pages/genel_rapor.php">
+                                    <i class="fas fa-file-alt me-2"></i> Genel Rapor
+                                </a>
+                            </li>
                         <?php endif; ?>
                     </ul>
                 </div>

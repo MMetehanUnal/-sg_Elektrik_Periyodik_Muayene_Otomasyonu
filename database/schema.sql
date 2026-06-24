@@ -499,3 +499,28 @@ INSERT INTO system_settings (setting_key, setting_value) VALUES
 ('logo_type', 'text'),
 ('active_logo', '')
 ON DUPLICATE KEY UPDATE setting_key = setting_key;
+
+-- ============================================================
+-- 7. GENEL RAPOR MODÜLÜ
+-- ============================================================
+
+-- Genel Raporlar
+CREATE TABLE IF NOT EXISTS general_reports (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    kurum_id INT NOT NULL,
+    title VARCHAR(500) NOT NULL,
+    content LONGTEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (kurum_id) REFERENCES institutions(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Genel Rapor Görselleri
+CREATE TABLE IF NOT EXISTS general_report_images (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    report_id INT NOT NULL,
+    filename VARCHAR(255) NOT NULL,
+    original_name VARCHAR(255),
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (report_id) REFERENCES general_reports(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
