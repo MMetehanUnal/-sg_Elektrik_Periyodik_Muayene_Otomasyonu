@@ -29,16 +29,16 @@ $typeLabels = [
 try {
     // UNION ALL ile tüm rapor türlerini birleştir
     $sql = "
-        (SELECT id, kurum_id, report_no COLLATE utf8mb4_unicode_ci AS rapor_no, report_date AS kontrol_tarihi, authorized_person_id, 'grounding' as report_type
+        (SELECT id, kurum_id, report_no COLLATE utf8mb4_unicode_ci AS rapor_no, report_date AS kontrol_tarihi, authorized_person_id, 'grounding' as report_type, firma_adi_eki COLLATE utf8mb4_unicode_ci AS firma_adi_eki
          FROM grounding_reports WHERE kurum_id = ?)
         UNION ALL
-        (SELECT id, kurum_id, report_no COLLATE utf8mb4_unicode_ci AS rapor_no, report_date AS kontrol_tarihi, authorized_person_id, 'ic_tesisat' as report_type
+        (SELECT id, kurum_id, report_no COLLATE utf8mb4_unicode_ci AS rapor_no, report_date AS kontrol_tarihi, authorized_person_id, 'ic_tesisat' as report_type, firma_adi_eki COLLATE utf8mb4_unicode_ci AS firma_adi_eki
          FROM internal_installation_reports WHERE kurum_id = ?)
         UNION ALL
-        (SELECT id, kurum_id, report_no COLLATE utf8mb4_unicode_ci AS rapor_no, report_date AS kontrol_tarihi, authorized_person_id, 'lightning' as report_type
+        (SELECT id, kurum_id, report_no COLLATE utf8mb4_unicode_ci AS rapor_no, report_date AS kontrol_tarihi, authorized_person_id, 'lightning' as report_type, firma_adi_eki COLLATE utf8mb4_unicode_ci AS firma_adi_eki
          FROM lightning_protection_reports WHERE kurum_id = ?)
         UNION ALL
-        (SELECT id, kurum_id, report_no COLLATE utf8mb4_unicode_ci AS rapor_no, report_date AS kontrol_tarihi, authorized_person_id, 'fire_detection' as report_type
+        (SELECT id, kurum_id, report_no COLLATE utf8mb4_unicode_ci AS rapor_no, report_date AS kontrol_tarihi, authorized_person_id, 'fire_detection' as report_type, firma_adi_eki COLLATE utf8mb4_unicode_ci AS firma_adi_eki
          FROM fire_detection_reports WHERE kurum_id = ?)
         ORDER BY kontrol_tarihi DESC
     ";

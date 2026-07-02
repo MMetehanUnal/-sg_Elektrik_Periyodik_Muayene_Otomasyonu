@@ -26,6 +26,53 @@ $panel_id_param = isset($_GET['panel_id']) ? (int) $_GET['panel_id'] : null;
 $msg = '';
 $msg_type = 'success';
 
+// Section5 questions definition
+$s5_questions = [
+    'PANO VE DİĞER DONANIMLARA GİRİŞİN UYGUNLUĞU' => [
+        'kablo_sebeke' => 'Kablo şebeke tarafı',
+        'kablo_donanim' => 'Kablo donanım tarafı',
+        'pano_sabitleme' => 'Pano sabitlenmesi (Depreme dayanıklılık)',
+        'dis_darbe' => 'Dış darbelere karşı koruma önlemi',
+        'yabanci_malzeme' => 'Elektrik panosu etrafında yabancı malzemeler',
+        'zemin_izolasyon' => 'Zemin izolasyonu',
+    ],
+    'TOPRAKLANMIŞ POTANSİYEL DENGELEME VE BESLEMENİN OTOMATİK KESİLMESİ, ELEKTRİK ÇARPMASINA KARŞI KORUMA' => [
+        'topraklama_iletken' => 'Topraklama iletkeni',
+        'ana_pot_iletken' => 'Ana potansiyel dengeleme iletkeni',
+        'ek_pot_iletken' => 'Ek Potansiyel dengeleme İletkeni (Tamamlayıcı pot.den)',
+        'kapak_6mm' => 'Pano kapak bağlantısı kontrolü 6 mm²',
+    ],
+    'KARŞILIKLI ZARARLI ETKİLERİN ÖNLENMESİ' => [
+        'elektriksel_olmayan' => 'Elektriksel olmayan tesislere yaklaşma ve diğer etkilerin kontrolü',
+        'bant_ayirma' => 'Bant I ve Bant II ayrılması, Bant II yalıtımı',
+        'guvenlik_devre' => 'Güvenlik devre ayrılması',
+        'pano_kapak_erisim' => 'Pano iç kapak, faza erişim engeli veya pleksi koruma',
+    ],
+    'TANIMLAMA' => [
+        'semalar' => 'Şemalar, talimatlar, devre çizimleri ve kısa bilgiler',
+        'koruma_etiket' => 'Koruma cihaz ve terminal etiket',
+        'tehlike_isaretleri' => 'Tehlike işaretleri ve diğer uyarı işaretleri',
+    ],
+    'KABLO ve İLETKENLER' => [
+        'kablo_yolu' => 'Kablo yollarının uygunluğu ve mekanik koruma',
+        'kablo_renk' => 'Kablo renk kodları Nötr: Mavi Toprak: Sarı/Yeşil',
+        'tesisat_yontemi' => 'Tesisat yöntemi',
+        'yangin_engeli' => 'Yangın engeli, uygun kilitleme ve sıcaklık etkisine karşı koruma',
+    ],
+    'TERMAL KAMERA' => [
+        'fotograf_tarihi' => 'Fotoğraf tarihi',
+        'kontak_gevsekligi' => 'Kontak gevşekliği ısınması',
+        'fotograf_no' => 'Fotoğraf no.',
+        'asiri_yuk_isinma' => 'Aşırı yük ısınması PVC kablolar için >70 derece',
+    ],
+    'GENEL DEĞERLENDİRMELER' => [
+        'yangin_sondurme' => 'Ekipman yakınında elektriksel ekipman yangın söndürme tertibatı',
+        'ekipman_temizlik' => 'Ekipman temizlik/bakım durumu',
+        'korozyon' => 'Pano içi ve bağlantılarının korozyon kontrolü',
+        'acil_aydinlatma' => 'Ekipman içi veya yakınında acil durum aydınlatma tertibatı',
+    ],
+];
+
 // ------- ACTION HANDLERS -------
 // Add Panel
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
@@ -44,6 +91,118 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $pid = (int) $_POST['panel_id'];
         $pdo->prepare("DELETE FROM ic_tesisat_panels WHERE id = ? AND report_id = ?")->execute([$pid, $report_id]);
         $msg = "Pano silindi.";
+    } elseif ($action === 'save_all_standard_section5') {
+        // Fetch all panels for this report
+        $stmt = $pdo->prepare("SELECT * FROM ic_tesisat_panels WHERE report_id=? ORDER BY panel_order");
+        $stmt->execute([$report_id]);
+        $panels_list = $stmt->fetchAll();
+        
+        // Load report start date for default date
+        $default_start_date = '';
+        if (!empty($rpt['start_date'])) {
+            $default_start_date = date('d.m.Y', strtotime($rpt['start_date']));
+        } else {
+            // fallback to institution
+            $stmt_inst = $pdo->prepare("SELECT start_date FROM institutions WHERE id=?");
+            $stmt_inst->execute([$kurum_id]);
+            $inst_info = $stmt_inst->fetch();
+            $default_start_date = $inst_info['start_date'] ? date('d.m.Y', strtotime($inst_info['start_date'])) : date('d.m.Y');
+        }
+        
+        $ins = $pdo->prepare("INSERT INTO ic_tesisat_section5 (panel_id, question_key, answer) VALUES (?,?,?)");
+        
+        foreach ($panels_list as $idx => $pnl) {
+            $pid = $pnl['id'];
+            $panel_idx = $idx + 1;
+            
+            // Delete existing section 5 answers for this panel
+            $pdo->prepare("DELETE FROM ic_tesisat_section5 WHERE panel_id = ?")->execute([$pid]);
+            
+            // Loop through all questions and insert 'U' or default text
+            foreach ($s5_questions as $group => $items) {
+                foreach ($items as $qkey => $label) {
+                    if ($qkey === 'fotograf_tarihi') {
+                        $ins->execute([$pid, $qkey, $default_start_date]);
+                    } elseif ($qkey === 'fotograf_no') {
+                        $ins->execute([$pid, $qkey, $panel_idx]);
+                    } else {
+                        $ins->execute([$pid, $qkey, 'U']);
+                    }
+                }
+            }
+        }
+        $msg = "Bütün panolar için 5. Gözle Muayene bölümü standart bilgilerle ('U' - Uygun) veritabanına kaydedildi.";
+    } elseif ($action === 'fill_all_test_data') {
+        // Fetch all panels for this report
+        $stmt = $pdo->prepare("SELECT * FROM ic_tesisat_panels WHERE report_id=? ORDER BY panel_order");
+        $stmt->execute([$report_id]);
+        $panels_list = $stmt->fetchAll();
+        
+        $filled_count = 0;
+        foreach ($panels_list as $pnl) {
+            $pid = $pnl['id'];
+            
+            // Check if 6.1 header exists and is empty
+            $s61 = $pdo->prepare("SELECT * FROM ic_tesisat_section6_1 WHERE panel_id=?");
+            $s61->execute([$pid]);
+            $s61data = $s61->fetch();
+            
+            $header_is_empty = !$s61data || (empty($s61data['zx']) && empty($s61data['zln']));
+            
+            if ($header_is_empty) {
+                $randFloat = function($base, $variance, $decimals) {
+                    $random_val = $base + (mt_rand() / mt_getrandmax() * $variance * 2 - $variance);
+                    return number_format($random_val, $decimals, '.', '');
+                };
+                
+                $zx = $randFloat(2.0, 0.5, 2);
+                $zln = $randFloat(2.0, 0.5, 2);
+                $voltage_ff = $randFloat(230, 5, 1);
+                $voltage_ln = $randFloat(230, 5, 1);
+                $voltage_npe = $randFloat(1.5, 0.5, 2);
+                $short_circuit_3ph = $randFloat(0.9, 0.25, 2);
+                $dkd_type = '-';
+                $dkd_current = '-';
+                
+                $pdo->prepare("DELETE FROM ic_tesisat_section6_1 WHERE panel_id=?")->execute([$pid]);
+                $pdo->prepare("INSERT INTO ic_tesisat_section6_1 (panel_id,zx,zln,voltage_ff,voltage_ln,voltage_npe,short_circuit_3ph,dkd_type,dkd_current) VALUES (?,?,?,?,?,?,?,?,?)")
+                    ->execute([$pid, $zx, $zln, $voltage_ff, $voltage_ln, $voltage_npe, $short_circuit_3ph, $dkd_type, $dkd_current]);
+            }
+            
+            // Check if 6.1 rows exist and are empty
+            $s61rows = $pdo->prepare("SELECT * FROM ic_tesisat_section6_1_rows WHERE panel_id=?");
+            $s61rows->execute([$pid]);
+            $rows_data = $s61rows->fetchAll();
+            
+            $rows_are_empty = empty($rows_data) || (count($rows_data) === 1 && empty($rows_data[0]['linye_adi']));
+            
+            if ($rows_are_empty) {
+                $rcd_ia = ['24', '27', '30'][array_rand(['24', '27', '30'])];
+                $rcd_ta = number_format(27 + (mt_rand() / mt_getrandmax() * 3 * 2 - 3), 2, '.', '');
+                
+                $pdo->prepare("DELETE FROM ic_tesisat_section6_1_rows WHERE panel_id=?")->execute([$pid]);
+                $ins = $pdo->prepare("INSERT INTO ic_tesisat_section6_1_rows (panel_id,no_col,linye_adi,acma_egrisi,kutup_sayisi,in_a,icu,faz_kesiti,npen_kesiti,pe_kesiti,ib_tasarim,iz_kapasite,rcd_ia,rcd_ta,sonuc) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+                $ins->execute([
+                    $pid, 
+                    '1', 
+                    $pnl['panel_name'], 
+                    'C', 
+                    '4', 
+                    '630', 
+                    '6kA', 
+                    '1*10', 
+                    '1*10', 
+                    '1*10', 
+                    '50', 
+                    '48', 
+                    $rcd_ia, 
+                    $rcd_ta, 
+                    'Uygun'
+                ]);
+                $filled_count++;
+            }
+        }
+        $msg = "Bütün boş panolar için test verileri başarıyla oluşturuldu ve veritabanına kaydedildi. (Doldurulan pano sayısı: $filled_count)";
     } elseif ($action === 'save_section5') {
         $pid = (int) $_POST['panel_id'];
         $answers = $_POST['q'] ?? [];
@@ -287,53 +446,6 @@ $s6header = $pdo->prepare("SELECT * FROM ic_tesisat_section6_header WHERE report
 $s6header->execute([$report_id]);
 $s6hdr = $s6header->fetch();
 
-// Section5 questions definition
-$s5_questions = [
-    'PANO VE DİĞER DONANIMLARA GİRİŞİN UYGUNLUĞU' => [
-        'kablo_sebeke' => 'Kablo şebeke tarafı',
-        'kablo_donanim' => 'Kablo donanım tarafı',
-        'pano_sabitleme' => 'Pano sabitlenmesi (Depreme dayanıklılık)',
-        'dis_darbe' => 'Dış darbelere karşı koruma önlemi',
-        'yabanci_malzeme' => 'Elektrik panosu etrafında yabancı malzemeler',
-        'zemin_izolasyon' => 'Zemin izolasyonu',
-    ],
-    'TOPRAKLANMIŞ POTANSİYEL DENGELEME VE BESLEMENİN OTOMATİK KESİLMESİ, ELEKTRİK ÇARPMASINA KARŞI KORUMA' => [
-        'topraklama_iletken' => 'Topraklama iletkeni',
-        'ana_pot_iletken' => 'Ana potansiyel dengeleme iletkeni',
-        'ek_pot_iletken' => 'Ek Potansiyel dengeleme İletkeni (Tamamlayıcı pot.den)',
-        'kapak_6mm' => 'Pano kapak bağlantısı kontrolü 6 mm²',
-    ],
-    'KARŞILIKLI ZARARLI ETKİLERİN ÖNLENMESİ' => [
-        'elektriksel_olmayan' => 'Elektriksel olmayan tesislere yaklaşma ve diğer etkilerin kontrolü',
-        'bant_ayirma' => 'Bant I ve Bant II ayrılması, Bant II yalıtımı',
-        'guvenlik_devre' => 'Güvenlik devre ayrılması',
-        'pano_kapak_erisim' => 'Pano iç kapak, faza erişim engeli veya pleksi koruma',
-    ],
-    'TANIMLAMA' => [
-        'semalar' => 'Şemalar, talimatlar, devre çizimleri ve kısa bilgiler',
-        'koruma_etiket' => 'Koruma cihaz ve terminal etiket',
-        'tehlike_isaretleri' => 'Tehlike işaretleri ve diğer uyarı işaretleri',
-    ],
-    'KABLO ve İLETKENLER' => [
-        'kablo_yolu' => 'Kablo yollarının uygunluğu ve mekanik koruma',
-        'kablo_renk' => 'Kablo renk kodları Nötr: Mavi Toprak: Sarı/Yeşil',
-        'tesisat_yontemi' => 'Tesisat yöntemi',
-        'yangin_engeli' => 'Yangın engeli, uygun kilitleme ve sıcaklık etkisine karşı koruma',
-    ],
-    'TERMAL KAMERA' => [
-        'fotograf_tarihi' => 'Fotoğraf tarihi',
-        'kontak_gevsekligi' => 'Kontak gevşekliği ısınması',
-        'fotograf_no' => 'Fotoğraf no.',
-        'asiri_yuk_isinma' => 'Aşırı yük ısınması PVC kablolar için >70 derece',
-    ],
-    'GENEL DEĞERLENDİRMELER' => [
-        'yangin_sondurme' => 'Ekipman yakınında elektriksel ekipman yangın söndürme tertibatı',
-        'ekipman_temizlik' => 'Ekipman temizlik/bakım durumu',
-        'korozyon' => 'Pano içi ve bağlantılarının korozyon kontrolü',
-        'acil_aydinlatma' => 'Ekipman içi veya yakınında acil durum aydınlatma tertibatı',
-    ],
-];
-
 include '../../includes/header.php';
 ?>
 
@@ -423,6 +535,25 @@ include '../../includes/header.php';
 
     <!-- RIGHT: content area -->
     <div class="col-md-9">
+
+        <!-- Top bulk actions bar -->
+        <div class="mb-3 d-flex gap-2 justify-content-end">
+            <?php if ($section === '5'): ?>
+                <form method="POST" onsubmit="return confirm('Tüm panolar için Gözle Muayene bölümünü standart değerlerle (U - Uygun) doldurmak istiyor musunuz?')">
+                    <input type="hidden" name="action" value="save_all_standard_section5">
+                    <button type="submit" class="btn btn-warning btn-sm fw-bold shadow-sm text-dark">
+                        <i class="fas fa-check-double me-1"></i> 5. STANDART BİLGİ KAYDET
+                    </button>
+                </form>
+            <?php elseif ($section === '6'): ?>
+                <form method="POST" onsubmit="return confirm('Tüm boş panoları rastgele test verileriyle doldurmak istiyor musunuz?')">
+                    <input type="hidden" name="action" value="fill_all_test_data">
+                    <button type="submit" class="btn btn-info text-white btn-sm fw-bold shadow-sm">
+                        <i class="fas fa-magic me-1"></i> 6. TEST VERİSİ EKLE
+                    </button>
+                </form>
+            <?php endif; ?>
+        </div>
 
         <?php if (!$panel_id_param && $section !== '6'): ?>
             <div class="alert alert-info"><i class="fas fa-info-circle me-2"></i> Soldaki listeden bir pano seçin veya yeni

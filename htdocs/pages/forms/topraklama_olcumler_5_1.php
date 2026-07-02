@@ -119,7 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['action'])) {
 }
 
 // Fetch available ic tesisat reports
-$stmt = $pdo->prepare("SELECT id, report_no, report_date FROM internal_installation_reports WHERE kurum_id = ? ORDER BY report_date DESC");
+$stmt = $pdo->prepare("SELECT id, report_no, report_date, firma_adi_eki FROM internal_installation_reports WHERE kurum_id = ? ORDER BY report_date DESC");
 $stmt->execute([$kurum_id]);
 $ic_tesisat_reports = $stmt->fetchAll();
 
@@ -186,7 +186,14 @@ include '../../includes/header.php';
                             <option value="">Rapor Seçiniz...</option>
                             <?php foreach ($ic_tesisat_reports as $icr): ?>
                                 <option value="<?php echo $icr['id']; ?>">
-                                    <?php echo htmlspecialchars($icr['report_no'] . " (" . date('d.m.Y', strtotime($icr['report_date'])) . ")"); ?>
+                                    <?php 
+                                    $label = $icr['report_no'];
+                                    if (!empty($icr['firma_adi_eki'])) {
+                                        $label .= " - " . $icr['firma_adi_eki'];
+                                    }
+                                    $label .= " (" . date('d.m.Y', strtotime($icr['report_date'])) . ")";
+                                    echo htmlspecialchars($label); 
+                                    ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -302,6 +309,7 @@ include '../../includes/header.php';
     </div>
 
     <button type="button" class="btn btn-secondary mb-3" id="addRow">Satır Ekle</button>
+    <button type="button" class="btn btn-danger mb-3" id="clearAllBtn">Tüm Satırları Sil</button>
     <br>
     <input type="hidden" name="measurements_json" id="measurements_json">
     <button type="button" class="btn btn-primary" id="saveBtn">Kaydet</button>
@@ -371,6 +379,28 @@ include '../../includes/header.php';
             if (document.querySelectorAll('#measurementsTable tbody tr').length > 1) {
                 row.remove();
             }
+        }
+    });
+
+    document.getElementById('clearAllBtn').addEventListener('click', function () {
+        if (confirm('Tüm satırları silmek istediğinize emin misiniz?')) {
+            var tableBody = document.querySelector('#measurementsTable tbody');
+            while (tableBody.rows.length > 1) {
+                tableBody.deleteRow(1);
+            }
+            var firstRow = tableBody.rows[0];
+            var inputs = firstRow.querySelectorAll('input, select');
+            inputs.forEach(function (input) {
+                if (input.tagName === 'INPUT') {
+                    if (input.type === 'number' && input.name.includes('[point_no]')) {
+                        input.value = '1';
+                    } else {
+                        input.value = '';
+                    }
+                } else if (input.tagName === 'SELECT') {
+                    input.value = '250';
+                }
+            });
         }
     });
 

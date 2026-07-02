@@ -31,6 +31,7 @@ include '../includes/header.php';
                 <thead>
                     <tr>
                         <th>Rapor No</th>
+                        <th>Firma Adı Eki</th>
                         <th>Rapor Tarihi</th>
                         <th>Kontrol Nedeni</th>
                         <th>Sonuç</th>
@@ -41,13 +42,13 @@ include '../includes/header.php';
                 <tbody>
                     <?php
                     $stmt = $pdo->prepare("
-                        (SELECT id, report_no COLLATE utf8mb4_general_ci as report_no, report_date, control_reason COLLATE utf8mb4_general_ci as control_reason, result COLLATE utf8mb4_general_ci as result, authorized_person_id, 'topraklama' as type FROM grounding_reports WHERE kurum_id = ?)
+                        (SELECT id, report_no COLLATE utf8mb4_general_ci as report_no, report_date, control_reason COLLATE utf8mb4_general_ci as control_reason, result COLLATE utf8mb4_general_ci as result, authorized_person_id, 'topraklama' as type, firma_adi_eki COLLATE utf8mb4_general_ci as firma_adi_eki FROM grounding_reports WHERE kurum_id = ?)
                         UNION ALL
-                        (SELECT id, report_no COLLATE utf8mb4_general_ci as report_no, report_date, control_reason COLLATE utf8mb4_general_ci as control_reason, result COLLATE utf8mb4_general_ci as result, authorized_person_id, 'ic_tesisat' as type FROM internal_installation_reports WHERE kurum_id = ?)
+                        (SELECT id, report_no COLLATE utf8mb4_general_ci as report_no, report_date, control_reason COLLATE utf8mb4_general_ci as control_reason, result COLLATE utf8mb4_general_ci as result, authorized_person_id, 'ic_tesisat' as type, firma_adi_eki COLLATE utf8mb4_general_ci as firma_adi_eki FROM internal_installation_reports WHERE kurum_id = ?)
                         UNION ALL
-                        (SELECT id, report_no COLLATE utf8mb4_general_ci as report_no, report_date, control_reason COLLATE utf8mb4_general_ci as control_reason, result COLLATE utf8mb4_general_ci as result, authorized_person_id, 'yildirim' as type FROM lightning_protection_reports WHERE kurum_id = ?)
+                        (SELECT id, report_no COLLATE utf8mb4_general_ci as report_no, report_date, control_reason COLLATE utf8mb4_general_ci as control_reason, result COLLATE utf8mb4_general_ci as result, authorized_person_id, 'yildirim' as type, firma_adi_eki COLLATE utf8mb4_general_ci as firma_adi_eki FROM lightning_protection_reports WHERE kurum_id = ?)
                         UNION ALL
-                        (SELECT id, report_no COLLATE utf8mb4_general_ci as report_no, report_date, control_reason COLLATE utf8mb4_general_ci as control_reason, result COLLATE utf8mb4_general_ci as result, authorized_person_id, 'yangin' as type FROM fire_detection_reports WHERE kurum_id = ?)
+                        (SELECT id, report_no COLLATE utf8mb4_general_ci as report_no, report_date, control_reason COLLATE utf8mb4_general_ci as control_reason, result COLLATE utf8mb4_general_ci as result, authorized_person_id, 'yangin' as type, firma_adi_eki COLLATE utf8mb4_general_ci as firma_adi_eki FROM fire_detection_reports WHERE kurum_id = ?)
                         ORDER BY report_date DESC
                     ");
                     $stmt->execute([$kurum_id, $kurum_id, $kurum_id, $kurum_id]);
@@ -72,6 +73,9 @@ include '../includes/header.php';
                                         echo 'Yangın Algılama';
                                     ?>
                                 </small>
+                            </td>
+                            <td>
+                                <?php echo !empty($row['firma_adi_eki']) ? htmlspecialchars($row['firma_adi_eki']) : '-'; ?>
                             </td>
                             <td>
                                 <?php echo date('d.m.Y', strtotime($row['report_date'])); ?>
