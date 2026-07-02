@@ -200,6 +200,14 @@
                                 </a>
                             </li>
                         <?php endif; ?>
+
+                        <li class="nav-section-title mt-4 mb-2">GENEL</li>
+                        <li class="nav-item mb-3">
+                            <a class="nav-link side-link <?php echo basename($_SERVER['PHP_SELF']) == 'dokumanlar.php' ? 'active' : ''; ?>"
+                                href="/pages/dokumanlar.php">
+                                <i class="fas fa-file-download me-2"></i> Dökümanlar
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </div>

@@ -15,6 +15,10 @@ try {
 
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 
+    $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+
+    $pdo->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, false);
+
 } catch (PDOException $e) {
 
     die("Veritabanı bağlantı hatası: " . $e->getMessage());

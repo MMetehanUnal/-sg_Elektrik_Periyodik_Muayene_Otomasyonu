@@ -20,27 +20,27 @@ $kurumId = requireInstitution($pdo);
 
 // Rapor türü etiketleri (Türkçe)
 $typeLabels = [
-    'topraklama'  => 'Topraklama',
-    'ic_tesisat'  => 'İç Tesisat',
-    'yildirim'    => 'Yıldırımdan Korunma',
-    'yangin'      => 'Yangın Algılama'
+    'grounding'      => 'Topraklama',
+    'ic_tesisat'     => 'İç Tesisat',
+    'lightning'      => 'Yıldırımdan Korunma',
+    'fire_detection' => 'Yangın Algılama'
 ];
 
 try {
     // UNION ALL ile tüm rapor türlerini birleştir
     $sql = "
-        (SELECT id, report_no, report_date, control_reason, result, authorized_person_id, 'topraklama' as type
+        (SELECT id, kurum_id, report_no COLLATE utf8mb4_unicode_ci AS rapor_no, report_date AS kontrol_tarihi, authorized_person_id, 'grounding' as report_type
          FROM grounding_reports WHERE kurum_id = ?)
         UNION ALL
-        (SELECT id, report_no, report_date, control_reason, result, authorized_person_id, 'ic_tesisat' as type
+        (SELECT id, kurum_id, report_no COLLATE utf8mb4_unicode_ci AS rapor_no, report_date AS kontrol_tarihi, authorized_person_id, 'ic_tesisat' as report_type
          FROM internal_installation_reports WHERE kurum_id = ?)
         UNION ALL
-        (SELECT id, report_no, report_date, control_reason, result, authorized_person_id, 'yildirim' as type
+        (SELECT id, kurum_id, report_no COLLATE utf8mb4_unicode_ci AS rapor_no, report_date AS kontrol_tarihi, authorized_person_id, 'lightning' as report_type
          FROM lightning_protection_reports WHERE kurum_id = ?)
         UNION ALL
-        (SELECT id, report_no, report_date, control_reason, result, authorized_person_id, 'yangin' as type
+        (SELECT id, kurum_id, report_no COLLATE utf8mb4_unicode_ci AS rapor_no, report_date AS kontrol_tarihi, authorized_person_id, 'fire_detection' as report_type
          FROM fire_detection_reports WHERE kurum_id = ?)
-        ORDER BY report_date DESC
+        ORDER BY kontrol_tarihi DESC
     ";
 
     $stmt = $pdo->prepare($sql);
@@ -63,7 +63,7 @@ try {
     // Her rapora yetkili kişi adını ve tür etiketini ekle
     foreach ($raporlar as &$rapor) {
         $rapor['authorized_person_name'] = $personNames[$rapor['authorized_person_id']] ?? null;
-        $rapor['type_label'] = $typeLabels[$rapor['type']] ?? $rapor['type'];
+        $rapor['type_label'] = $typeLabels[$rapor['report_type']] ?? $rapor['report_type'];
     }
     unset($rapor);
 
