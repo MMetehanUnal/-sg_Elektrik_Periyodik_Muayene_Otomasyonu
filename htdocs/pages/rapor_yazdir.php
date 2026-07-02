@@ -171,7 +171,13 @@ function renderHeader()
                         <table style="margin-top: 0; width: 100%; border-collapse: collapse;">
                             <tr>
                                 <td style="width: 20%;">Firma Adı</td>
-                                <td style="width: 40%;"><?php echo htmlspecialchars($data['firma_adi'] ?? ''); ?></td>
+                                <td style="width: 40%;"><?php 
+                                    $full_firma_adi = $data['firma_adi'] ?? '';
+                                    if (!empty($data['firma_adi_eki'])) {
+                                        $full_firma_adi .= '-' . $data['firma_adi_eki'];
+                                    }
+                                    echo htmlspecialchars($full_firma_adi); 
+                                ?></td>
                                 <td style="width: 20%;">Rapor Numarası</td>
                                 <td style="width: 20%;"><?php echo htmlspecialchars($data['report_no'] ?? ''); ?></td>
                             </tr>

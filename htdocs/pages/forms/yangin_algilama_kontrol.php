@@ -46,6 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $end_date = cleanInput($_POST['end_date']);
     $next_control_date = cleanInput($_POST['next_control_date']);
     $isg_katip_id = cleanInput($_POST['isg_katip_id'] ?? '');
+    $firma_adi_eki = cleanInput($_POST['firma_adi_eki'] ?? '');
 
     // Section 2.1
     $algilama_sistemi = cleanInput($_POST['algilama_sistemi'] ?? '');
@@ -92,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         if ($report_id) {
             $sql = "UPDATE fire_detection_reports SET 
-                report_date=?, start_date=?, end_date=?, next_control_date=?, isg_katip_id=?,
+                report_date=?, firma_adi_eki=?, start_date=?, end_date=?, next_control_date=?, isg_katip_id=?,
                 algilama_sistemi=?, uyari_sistemi=?, sistem_calisma_tipi=?, proje_onay_kurumu=?, 
                 control_reason=?, proje_onay_bilgileri=?, panel_marka_model=?, ilk_kontrol_tarihi=?, 
                 prev_control_date=?, weather_condition=?, ground_moisture=?,
@@ -105,6 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 WHERE id=? AND kurum_id=?";
             $params = [
                 $report_date,
+                $firma_adi_eki,
                 $start_date,
                 $end_date,
                 $next_control_date,
@@ -154,7 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $report_no = $k_codes['il_kodu'] . '-' . $k_codes['kurum_kodu'] . '-ya-' . time();
 
             $sql = "INSERT INTO fire_detection_reports 
-                (kurum_id, report_no, report_date, start_date, end_date, next_control_date, isg_katip_id, 
+                (kurum_id, report_no, report_date, firma_adi_eki, start_date, end_date, next_control_date, isg_katip_id, 
                 algilama_sistemi, uyari_sistemi, sistem_calisma_tipi, proje_onay_kurumu, 
                 control_reason, proje_onay_bilgileri, panel_marka_model, ilk_kontrol_tarihi, 
                 prev_control_date, weather_condition, ground_moisture,
@@ -164,11 +166,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 bina_tehlike_sinifi, tehlike_kategorisi, toplam_alan, kat_sayisi, 
                 bina_yuksekligi, yapi_kullanma_izin_tarihi, bolum_sayisi, diger_tespitler,
                 device1_id, device2_id, authorized_person_id, defects, notes, result)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             $params = [
                 $kurum_id,
                 $report_no,
                 $report_date,
+                $firma_adi_eki,
                 $start_date,
                 $end_date,
                 $next_control_date,
@@ -258,6 +261,12 @@ include '../../includes/header.php';
             <div id="c1" class="accordion-collapse collapse show" data-bs-parent="#accordionForm">
                 <div class="accordion-body">
                     <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Firma Adı Eki</label>
+                            <input type="text" class="form-control" name="firma_adi_eki"
+                                value="<?php echo htmlspecialchars($report['firma_adi_eki'] ?? ''); ?>"
+                                placeholder="Örn: C Blok, Depo">
+                        </div>
                         <div class="col-md-3 mb-3">
                             <label class="form-label">Rapor Tarihi</label>
                             <input type="date" class="form-control" name="report_date"

@@ -113,6 +113,146 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         }
         echo json_encode(['success' => false]);
         exit;
+    } elseif ($action === 'bulk_upload_photo') {
+        if (!empty($_FILES['photo']['name'])) {
+            $file = $_FILES['photo'];
+            $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
+                $type_mode = $_POST['type_mode'] ?? 'auto';
+                $ptype = 'normal';
+                $filename = pathinfo($file['name'], PATHINFO_FILENAME);
+                
+                if ($type_mode === 'termal') {
+                    $ptype = 'termal';
+                } elseif ($type_mode === 'normal') {
+                    $ptype = 'normal';
+                } else { // auto
+                    $lower_name = mb_strtolower($filename, 'UTF-8');
+                    $thermal_keywords = ['termal', 'thermal', 'isi', 'temp', 'sicak', 'heat', 'inf', 'ir'];
+                    $is_thermal = false;
+                    foreach ($thermal_keywords as $keyword) {
+                        if (strpos($lower_name, $keyword) !== false) {
+                            $is_thermal = true;
+                            break;
+                        }
+                    }
+                    $ptype = $is_thermal ? 'termal' : 'normal';
+                }
+
+                // Extract number from filename (e.g. TR000450 -> 450)
+                $extracted_number = '';
+                if (preg_match('/(?:^|[^0-9])(0*[1-9][0-9]*)(?:[^0-9]|$)/', $filename, $matches)) {
+                    $extracted_number = (string)(int)$matches[1];
+                } elseif (preg_match('/([0-9]+)/', $filename, $matches)) {
+                    $extracted_number = (string)(int)$matches[1];
+                }
+
+                // Retrieve all panels for this report
+                $stmt = $pdo->prepare("SELECT * FROM ic_tesisat_panels WHERE report_id=? ORDER BY panel_order");
+                $stmt->execute([$report_id]);
+                $all_panels = $stmt->fetchAll();
+                
+                $matched_panel = null;
+                $match_reason = '';
+
+                if ($extracted_number !== '') {
+                    foreach ($all_panels as $pnl) {
+                        if (!empty($pnl['thermal_numbers'])) {
+                            $nums = explode(',', $pnl['thermal_numbers']);
+                            foreach ($nums as $n) {
+                                if (trim($n) === $extracted_number) {
+                                    $matched_panel = $pnl;
+                                    $match_reason = "Fotoğraf No ($extracted_number)";
+                                    break 2;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Fallback 1: Match by name
+                if (!$matched_panel) {
+                    $normalizeFn = function($str) {
+                        $str = mb_strtolower($str, 'UTF-8');
+                        $turk = ['ı', 'ğ', 'ü', 'ş', 'ö', 'ç', 'İ', 'Ğ', 'Ü', 'Ş', 'Ö', 'Ç'];
+                        $eng  = ['i', 'g', 'u', 's', 'o', 'c', 'i', 'g', 'u', 's', 'o', 'c'];
+                        $str = str_replace($turk, $eng, $str);
+                        $str = preg_replace('/[^a-z0-9]/', '', $str);
+                        return $str;
+                    };
+                    
+                    $normalized_filename = $normalizeFn($filename);
+                    
+                    $panels_by_length = $all_panels;
+                    usort($panels_by_length, function($a, $b) use ($normalizeFn) {
+                        return strlen($normalizeFn($b['panel_name'])) <=> strlen($normalizeFn($a['panel_name']));
+                    });
+                    
+                    foreach ($panels_by_length as $pnl) {
+                        $norm_pname = $normalizeFn($pnl['panel_name']);
+                        if (!empty($norm_pname) && strpos($normalized_filename, $norm_pname) !== false) {
+                            $matched_panel = $pnl;
+                            $match_reason = "Pano Adı ('" . $pnl['panel_name'] . "')";
+                            break;
+                        }
+                    }
+                }
+
+                // Fallback 2: Match by order
+                if (!$matched_panel && $extracted_number !== '') {
+                    $order_num = (int)$extracted_number;
+                    foreach ($all_panels as $pnl) {
+                        if ((int)$pnl['panel_order'] === $order_num) {
+                            $matched_panel = $pnl;
+                            $match_reason = "Sıra No Eşleşmesi (#$order_num)";
+                            break;
+                        }
+                    }
+                }
+
+                if ($matched_panel) {
+                    $pid = $matched_panel['id'];
+                    $dir = "../../uploads/ic_tesisat/$report_id/$pid/";
+                    if (!is_dir($dir)) {
+                        mkdir($dir, 0755, true);
+                    }
+                    $new_filename = $ptype . '_' . time() . '_' . rand(100, 999) . '.' . $ext;
+                    $dest_path = $dir . $new_filename;
+                    
+                    $uploaded = compressImage($file['tmp_name'], $dest_path, 75, 800);
+                    if (!$uploaded) {
+                        $uploaded = move_uploaded_file($file['tmp_name'], $dest_path);
+                    }
+                    
+                    if ($uploaded) {
+                        $fpath = "/uploads/ic_tesisat/$report_id/$pid/" . $new_filename;
+                        $pdo->prepare("INSERT INTO ic_tesisat_photos (panel_id, photo_type, file_path) VALUES (?,?,?)")->execute([$pid, $ptype, $fpath]);
+                        
+                        echo json_encode([
+                            'success' => true,
+                            'path' => $fpath,
+                            'photo_id' => $pdo->lastInsertId(),
+                            'panel_name' => $matched_panel['panel_name'],
+                            'photo_type' => ($ptype === 'termal' ? 'Termal Kamera' : 'Normal Kamera'),
+                            'reason' => $match_reason,
+                            'extracted_no' => ($extracted_number !== '' ? $extracted_number : '-')
+                        ]);
+                        exit;
+                    } else {
+                        echo json_encode(['success' => false, 'error' => 'Dosya sunucuya yazılamadı.', 'extracted_no' => ($extracted_number !== '' ? $extracted_number : '-')]);
+                        exit;
+                    }
+                } else {
+                    echo json_encode(['success' => false, 'error' => 'Herhangi bir pano ile eşleştirilemedi.', 'extracted_no' => ($extracted_number !== '' ? $extracted_number : '-')]);
+                    exit;
+                }
+            } else {
+                echo json_encode(['success' => false, 'error' => 'Desteklenmeyen dosya türü.', 'extracted_no' => '-']);
+                exit;
+            }
+        }
+        echo json_encode(['success' => false, 'error' => 'Dosya yüklenemedi.', 'extracted_no' => '-']);
+        exit;
     } elseif ($action === 'delete_photo') {
         $photo_id = (int) $_POST['photo_id'];
         $stmt = $pdo->prepare("SELECT p.file_path FROM ic_tesisat_photos p JOIN ic_tesisat_panels pan ON p.panel_id=pan.id WHERE p.id=? AND pan.report_id=?");
@@ -131,8 +271,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     } elseif ($action === 'save_panel_notes') {
         $pid = (int) $_POST['panel_id'];
         $notes = trim($_POST['notes'] ?? '');
-        $pdo->prepare("UPDATE ic_tesisat_panels SET notes = ? WHERE id = ? AND report_id = ?")->execute([$notes, $pid, $report_id]);
-        $msg = "Notlar kaydedildi.";
+        $thermal_numbers = trim($_POST['thermal_numbers'] ?? '');
+        $thermal_numbers = preg_replace('/\s+/', '', $thermal_numbers); // remove spaces
+        $pdo->prepare("UPDATE ic_tesisat_panels SET notes = ?, thermal_numbers = ? WHERE id = ? AND report_id = ?")->execute([$notes, $thermal_numbers, $pid, $report_id]);
+        $msg = "Pano bilgileri kaydedildi.";
     }
 }
 
@@ -881,6 +1023,17 @@ include '../../includes/header.php';
                             <input type="hidden" name="panel_id" value="<?php echo $panel_id_param; ?>">
                             <div class="mb-3">
                                 <label class="form-label fw-bold text-primary">
+                                    <i class="fas fa-temperature-high me-1"></i> Termal Kamera Fotoğraf Numaraları
+                                </label>
+                                <div class="alert alert-info py-2 small mb-2">
+                                    <i class="fas fa-info-circle me-1"></i> Bu panoya ait termal fotoğraf numaralarını virgülle ayırarak giriniz (Örn: <code>450,1411</code>). Bu sayede toplu yükleme ekranında <code>TR000450.JPG</code> veya <code>TR001411.JPG</code> dosyaları bu panoya otomatik dağıtılacaktır.
+                                </div>
+                                <input type="text" class="form-control border-primary" name="thermal_numbers" 
+                                    value="<?php echo htmlspecialchars($current_panel['thermal_numbers'] ?? ''); ?>" 
+                                    placeholder="Örn: 450, 1411">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-primary">
                                     <i class="fas fa-sticky-note me-1"></i> Pano Notları
                                 </label>
                                 <div class="alert alert-secondary py-2 small mb-2">
@@ -891,7 +1044,7 @@ include '../../includes/header.php';
                             </div>
                             <div class="text-end">
                                 <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-save me-1"></i> Notu Kaydet
+                                    <i class="fas fa-save me-1"></i> Bilgileri Kaydet
                                 </button>
                             </div>
                         </form>
@@ -900,7 +1053,82 @@ include '../../includes/header.php';
             </div>
 
         <?php elseif ($section === 'photos' && !$current_panel): ?>
-            <div class="alert alert-info">Fotoğraf yüklemek için soldaki listeden bir pano seçin.</div>
+            <!-- TOPLU FOTOĞRAF YÜKLEME VE DAĞITIM -->
+            <div class="card mb-4 border-primary">
+                <div class="card-header bg-primary text-white fw-bold d-flex align-items-center justify-content-between">
+                    <span><i class="fas fa-images me-2"></i> Toplu Fotoğraf Yükleme & Otomatik Dağıtım</span>
+                    <span class="badge bg-light text-primary">Yeni</span>
+                </div>
+                <div class="card-body">
+                    <p class="card-text text-muted">
+                        Yükleyeceğiniz fotoğraflar (örn: <code>TR000450.JPG</code>, <code>TR001411.JPG</code>), dosya adlarındaki numaralar panolara tanımlanmış olan <strong>Termal Kamera Fotoğraf Numaraları</strong> ile eşleştirilerek ilgili panolara otomatik olarak dağıtılır.
+                    </p>
+                    
+                    <div class="row g-3 align-items-center mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">Fotoğraf Türü Belirleme</label>
+                            <select id="bulk-type-mode" class="form-select form-select-sm">
+                                <option value="auto">Dosya Adından Otomatik Tespit Et (Adında termal, isi, temp vb. geçiyorsa termal)</option>
+                                <option value="termal" selected>Tümünü Termal Kamera Fotoğrafı Olarak Yükle</option>
+                                <option value="normal">Tümünü Normal Fotoğraf Olarak Yükle</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 text-md-end pt-3">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('info-panel-nums').classList.toggle('d-none')">
+                                <i class="fas fa-list me-1"></i> Rapor Pano Numaralarını Göster/Gizle
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="info-panel-nums" class="alert alert-secondary py-2 small d-none">
+                        <h6 class="fw-bold mb-1"><i class="fas fa-info-circle me-1"></i> Rapor Kapsamındaki Panolar ve Tanımlı Numaralar:</h6>
+                        <ul class="mb-0 ps-3">
+                            <?php foreach ($panels as $pnl): ?>
+                                <li>
+                                    <strong><?php echo htmlspecialchars($pnl['panel_name']); ?>:</strong> 
+                                    <?php echo !empty($pnl['thermal_numbers']) ? '<span class="badge bg-dark">' . htmlspecialchars($pnl['thermal_numbers']) . '</span>' : '<span class="text-danger">Numara tanımlanmamış</span>'; ?>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+
+                    <!-- Dropzone upload area -->
+                    <div id="bulk-upload-dropzone" class="border border-2 border-dashed border-primary rounded p-4 text-center bg-light cursor-pointer position-relative" style="transition: all 0.3s ease; border-style: dashed !important;">
+                        <input type="file" id="bulk-upload-input" class="position-absolute top-0 start-0 w-100 h-100 opacity-0 cursor-pointer" multiple accept="image/*" style="cursor: pointer;">
+                        <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-2"></i>
+                        <h5>Fotoğrafları Sürükleyip Bırakın veya Seçmek İçin Tıklayın</h5>
+                        <p class="text-muted small mb-0">Desteklenen formatlar: JPG, JPEG, PNG, WEBP (Çoklu seçim yapabilirsiniz)</p>
+                    </div>
+
+                    <!-- Upload Log & Preview Results -->
+                    <div id="bulk-upload-results" class="mt-4 d-none">
+                        <h6 class="fw-bold border-bottom pb-2 mb-3 text-primary d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-clipboard-list me-1"></i> Yükleme ve Dağıtım Sonuçları</span>
+                            <span class="badge bg-primary" id="bulk-total-badge">0 / 0</span>
+                        </h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped table-hover align-middle" id="results-table">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th style="width: 80px;">Önizleme</th>
+                                        <th>Dosya Adı</th>
+                                        <th>Ayıklanan No</th>
+                                        <th>Durum</th>
+                                        <th>Eşleşen Pano</th>
+                                        <th>Yöntem</th>
+                                        <th>Tür</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="results-tbody">
+                                    <!-- Dynamic rows will go here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="h5 mb-3 fw-bold"><i class="fas fa-th me-2"></i>Mevcut Pano Fotoğrafları</div>
 
             <!-- Show all panels thumbnails -->
             <div class="row g-3">
@@ -1094,6 +1322,145 @@ include '../../includes/header.php';
                 });
         }
     });
+
+    // Bulk Photo Upload
+    var bulkInput = document.getElementById('bulk-upload-input');
+    var bulkDropzone = document.getElementById('bulk-upload-dropzone');
+    var bulkResults = document.getElementById('bulk-upload-results');
+    var resultsTbody = document.getElementById('results-tbody');
+    var bulkTotalBadge = document.getElementById('bulk-total-badge');
+
+    if (bulkInput && bulkDropzone) {
+        // Drag over states
+        bulkDropzone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('bg-secondary', 'text-white');
+            this.style.borderColor = '#0d6efd';
+        });
+
+        bulkDropzone.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.classList.remove('bg-secondary', 'text-white');
+            this.style.borderColor = '';
+        });
+
+        bulkDropzone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('bg-secondary', 'text-white');
+            this.style.borderColor = '';
+            var files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleBulkFiles(files);
+            }
+        });
+
+        bulkInput.addEventListener('change', function() {
+            var files = this.files;
+            if (files.length > 0) {
+                handleBulkFiles(files);
+            }
+        });
+
+        function handleBulkFiles(files) {
+            bulkResults.classList.remove('d-none');
+            var totalFiles = files.length;
+            var completedCount = 0;
+            bulkTotalBadge.textContent = '0 / ' + totalFiles;
+            bulkTotalBadge.className = 'badge bg-warning text-dark';
+
+            Array.from(files).forEach(function(file, index) {
+                var rowId = 'bulk-row-' + Date.now() + '-' + index;
+                
+                var tr = document.createElement('tr');
+                tr.id = rowId;
+                tr.innerHTML = `
+                    <td class="text-center"><span class="spinner-border spinner-border-sm text-primary" role="status"></span></td>
+                    <td class="text-truncate fw-bold" style="max-width: 150px;" title="${file.name}">${file.name}</td>
+                    <td class="text-center">-</td>
+                    <td><span class="badge bg-secondary">Bekliyor...</span></td>
+                    <td class="fw-bold">-</td>
+                    <td>-</td>
+                    <td>-</td>
+                `;
+                resultsTbody.insertBefore(tr, resultsTbody.firstChild);
+
+                var fd = new FormData();
+                fd.append('action', 'bulk_upload_photo');
+                fd.append('type_mode', document.getElementById('bulk-type-mode').value);
+                fd.append('photo', file);
+
+                fetch(window.location.href, { method: 'POST', body: fd })
+                    .then(r => r.json())
+                    .then(data => {
+                        completedCount++;
+                        bulkTotalBadge.textContent = completedCount + ' / ' + totalFiles;
+                        
+                        var targetRow = document.getElementById(rowId);
+                        if (!targetRow) return;
+
+                        if (data.success) {
+                            targetRow.classList.add('table-success');
+                            targetRow.innerHTML = `
+                                <td><img src="${data.path}" class="rounded border" style="width: 50px; height: 40px; object-fit: cover;"></td>
+                                <td class="text-truncate fw-bold" style="max-width: 150px;" title="${file.name}">${file.name}</td>
+                                <td class="text-center"><span class="badge bg-dark text-white">${data.extracted_no}</span></td>
+                                <td><span class="badge bg-success"><i class="fas fa-check me-1"></i> Eşleşti</span></td>
+                                <td class="fw-bold text-success">${data.panel_name}</td>
+                                <td class="small text-muted">${data.reason}</td>
+                                <td><span class="badge bg-info text-dark">${data.photo_type}</span></td>
+                            `;
+                        } else {
+                            targetRow.classList.add('table-danger');
+                            targetRow.innerHTML = `
+                                <td class="text-center text-danger"><i class="fas fa-exclamation-triangle"></i></td>
+                                <td class="text-truncate text-muted" style="max-width: 150px;" title="${file.name}">${file.name}</td>
+                                <td class="text-center"><span class="badge bg-secondary">${data.extracted_no}</span></td>
+                                <td><span class="badge bg-danger"><i class="fas fa-times me-1"></i> Başarısız</span></td>
+                                <td class="text-danger fw-bold">Eşleşmedi</td>
+                                <td class="small text-danger">${data.error}</td>
+                                <td>-</td>
+                            `;
+                        }
+
+                        if (completedCount === totalFiles) {
+                            bulkTotalBadge.className = 'badge bg-success text-white';
+                            setTimeout(function() {
+                                if (!document.getElementById('refresh-btn')) {
+                                    var header = document.querySelector('#bulk-upload-results h6');
+                                    var refreshBtn = document.createElement('button');
+                                    refreshBtn.id = 'refresh-btn';
+                                    refreshBtn.className = 'btn btn-xs btn-success btn-sm ms-2 py-0 px-2';
+                                    refreshBtn.innerHTML = '<i class="fas fa-sync-alt me-1"></i> Sayfayı Yenile';
+                                    refreshBtn.onclick = function() { location.reload(); };
+                                    header.appendChild(refreshBtn);
+                                }
+                            }, 500);
+                        }
+                    })
+                    .catch(err => {
+                        completedCount++;
+                        bulkTotalBadge.textContent = completedCount + ' / ' + totalFiles;
+                        var targetRow = document.getElementById(rowId);
+                        if (targetRow) {
+                            targetRow.classList.add('table-danger');
+                            targetRow.innerHTML = `
+                                <td class="text-center text-danger"><i class="fas fa-exclamation-triangle"></i></td>
+                                <td class="text-truncate text-muted" style="max-width: 150px;">${file.name}</td>
+                                <td class="text-center">-</td>
+                                <td><span class="badge bg-danger">Ağ Hatası</span></td>
+                                <td class="text-danger fw-bold">Hata</td>
+                                <td class="small text-danger">Sunucu ile iletişim kurulamadı.</td>
+                                <td>-</td>
+                            `;
+                        }
+                        if (completedCount === totalFiles) {
+                            bulkTotalBadge.className = 'badge bg-success text-white';
+                        }
+                    });
+            });
+            bulkInput.value = '';
+        }
+    }
 </script>
 
 <?php include '../../includes/footer.php'; ?>

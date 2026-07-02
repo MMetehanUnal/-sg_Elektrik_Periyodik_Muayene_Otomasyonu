@@ -41,6 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $end_date = cleanInput($_POST['end_date']);
     $next_control_date = cleanInput($_POST['next_control_date']);
     $isg_katip_id = cleanInput($_POST['isg_katip_id']);
+    $firma_adi_eki = cleanInput($_POST['firma_adi_eki'] ?? '');
 
     // 2.1
     $control_reason = cleanInput($_POST['control_reason']);
@@ -90,6 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // 2a. Update Grounding Report
             $sql = "UPDATE grounding_reports SET 
                 report_date=?, start_date=?, end_date=?, next_control_date=?, isg_katip_id=?,
+                firma_adi_eki=?,
                 control_reason=?, grounding_type=?, weather=?, soil_moisture=?, 
                 protection_measure=?,
                 changes_exist=?, prev_label_exists=?, panel_id=?, 
@@ -104,6 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $end_date,
                 $next_control_date,
                 $isg_katip_id,
+                $firma_adi_eki,
                 $control_reason,
                 $grounding_type,
                 $weather,
@@ -134,12 +137,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $sql = "INSERT INTO grounding_reports 
                 (kurum_id, report_no, report_date, start_date, end_date, next_control_date, isg_katip_id, 
+                firma_adi_eki,
                 control_reason, grounding_type, weather, soil_moisture, 
                 protection_measure, changes_exist, prev_label_exists, panel_id, 
                 device1_id, device2_id, measurement_method, 
                 project_info, prev_control_date,
                 defects, notes, result, result_notes_selection, authorized_person_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             $params = [
                 $kurum_id,
                 $report_no,
@@ -148,6 +152,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $end_date,
                 $next_control_date,
                 $isg_katip_id,
+                $firma_adi_eki,
                 $control_reason,
                 $grounding_type,
                 $weather,
@@ -214,6 +219,12 @@ include '../../includes/header.php';
             <div id="c1" class="accordion-collapse collapse show" data-bs-parent="#accordionForm">
                 <div class="accordion-body">
                     <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Firma Adı Eki</label>
+                            <input type="text" class="form-control" name="firma_adi_eki"
+                                value="<?php echo htmlspecialchars($report['firma_adi_eki'] ?? ''); ?>"
+                                placeholder="Örn: A Blok, 2. Kısım">
+                        </div>
                         <div class="col-md-3 mb-3">
                             <label class="form-label">Rapor Tarihi</label>
                             <input type="date" class="form-control" name="report_date"

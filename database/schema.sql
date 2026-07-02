@@ -270,6 +270,7 @@ CREATE TABLE IF NOT EXISTS ic_tesisat_panels (
     panel_name VARCHAR(255) NOT NULL,
     panel_order INT DEFAULT 0,
     notes TEXT,
+    thermal_numbers VARCHAR(255) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (report_id) REFERENCES internal_installation_reports(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
