@@ -5,19 +5,36 @@ require_once '../../includes/auth.php';
 
 requireLogin();
 
+function toExcelDecimal($val) {
+    if ($val === null || $val === '') return '';
+    return is_numeric($val) ? str_replace('.', ',', $val) : $val;
+}
+
+function cleanImportValue($val) {
+    if ($val === null || $val === '') return '';
+    $val = trim($val);
+    $replaced = str_replace(',', '.', $val);
+    if (is_numeric($replaced)) {
+        return $replaced;
+    }
+    return $val;
+}
+
 $action = $_GET['action'] ?? '';
 $type = $_GET['type'] ?? '';
 $report_id = $_GET['report_id'] ?? null;
 
 if ($action === 'download') {
+    $current = isset($_GET['current']) && $_GET['current'] == '1';
+
     if ($type === '5_1') {
-        $filename = "topraklama_5_1_sablon.csv";
+        $filename = $current ? "topraklama_5_1_mevcut_veriler.csv" : "topraklama_5_1_sablon.csv";
         $headers = ['No', 'Olcum Noktasi', 'In(A)', 'Acma Egrisi Tipi', 'Acma Akimi Ia(A)', 'Ik1(A)', 'Zx/Rx(Ohm)', 'Zs/RA(Ohm)', 'RCD Tipi Limitler', 'RCD Test Ia(mA)', 'RCD Test Ta(ms)', 'Sonuc'];
     } elseif ($type === '5_2') {
-        $filename = "topraklama_5_2_sablon.csv";
+        $filename = $current ? "topraklama_5_2_mevcut_veriler.csv" : "topraklama_5_2_sablon.csv";
         $headers = ['No', 'Ust Pano Adi', 'Ust RCD Tipi', 'Ust RCD In(A)', 'Ust RCD Idn(mA)', 'Ust RCD Gecikme(ms)', 'Alt Pano Adi', 'Alt RCD Tipi', 'Alt RCD Idn(mA)', 'Alt RCD T(ms)', 'Sonuc'];
     } else {
-        die("Gersiz tip.");
+        die("Geçersiz tip.");
     }
 
     header('Content-Type: text/csv; charset=utf-8');
@@ -27,6 +44,50 @@ if ($action === 'download') {
     // Add UTF-8 BOM for Excel compatibility
     fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
     fputcsv($output, $headers, ';');
+
+    if ($current && $report_id) {
+        if ($type === '5_1') {
+            $stmt = $pdo->prepare("SELECT * FROM measurements_5_1 WHERE report_id = ? ORDER BY point_no ASC");
+            $stmt->execute([$report_id]);
+            $rows = $stmt->fetchAll();
+            foreach ($rows as $row) {
+                fputcsv($output, array_map('toExcelDecimal', [
+                    $row['point_no'],
+                    $row['point_name'],
+                    $row['prot_in'],
+                    $row['prot_type'],
+                    $row['prot_ia'],
+                    $row['prot_ik1'],
+                    $row['measured_zx_rx'],
+                    $row['limit_zs_ra'],
+                    $row['rcd_type_limits'],
+                    $row['rcd_test_ia'],
+                    $row['rcd_test_ta'],
+                    $row['result']
+                ]), ';');
+            }
+        } elseif ($type === '5_2') {
+            $stmt = $pdo->prepare("SELECT * FROM measurements_5_2 WHERE report_id = ? ORDER BY row_no ASC");
+            $stmt->execute([$report_id]);
+            $rows = $stmt->fetchAll();
+            foreach ($rows as $row) {
+                fputcsv($output, array_map('toExcelDecimal', [
+                    $row['row_no'],
+                    $row['upstream_panel'],
+                    $row['upstream_rcd_type'],
+                    $row['upstream_rcd_in'],
+                    $row['upstream_rcd_idn'],
+                    $row['upstream_rcd_dt'],
+                    $row['downstream_panel'],
+                    $row['downstream_rcd_type'],
+                    $row['downstream_rcd_idn'],
+                    $row['downstream_rcd_t'],
+                    $row['result']
+                ]), ';');
+            }
+        }
+    }
+
     fclose($output);
     exit;
 }
@@ -79,6 +140,7 @@ if ($action === 'upload') {
             while (($data = fgetcsv($handle, 1000, $separator)) !== FALSE) {
                 if (empty($data[1]))
                     continue; // Skip if point_name is empty
+                $data = array_map('cleanImportValue', $data);
                 $stmt_insert->execute([
                     $report_id,
                     $data[0], // point_no
@@ -98,15 +160,16 @@ if ($action === 'upload') {
         } elseif ($type === '5_2') {
             $stmt_delete = $pdo->prepare("DELETE FROM measurements_5_2 WHERE report_id = ?");
             $stmt_delete->execute([$report_id]);
-
+ 
             $stmt_insert = $pdo->prepare("INSERT INTO measurements_5_2 
                 (report_id, row_no, upstream_panel, upstream_rcd_type, upstream_rcd_in, upstream_rcd_idn, upstream_rcd_dt, 
                 downstream_panel, downstream_rcd_type, downstream_rcd_idn, downstream_rcd_t, result)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-
+ 
             while (($data = fgetcsv($handle, 1000, $separator)) !== FALSE) {
                 if (empty($data[1]))
                     continue; // Skip if upstream_panel is empty
+                $data = array_map('cleanImportValue', $data);
                 $stmt_insert->execute([
                     $report_id,
                     $data[0], // row_no

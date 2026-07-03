@@ -211,9 +211,14 @@ include '../../includes/header.php';
         <div class="card mb-4">
             <div class="card-header bg-light d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">CSV ile Veri Yükleme</h5>
-                <a href="csv_handler.php?action=download&type=5_1" class="btn btn-sm btn-outline-success">
-                    <i class="fas fa-file-download"></i> CSV Şablonu İndir
-                </a>
+                <div>
+                    <a href="csv_handler.php?action=download&type=5_1" class="btn btn-sm btn-outline-secondary me-2">
+                        <i class="fas fa-file-download"></i> CSV Şablonu İndir
+                    </a>
+                    <a href="csv_handler.php?action=download&type=5_1&report_id=<?php echo $report_id; ?>&current=1" class="btn btn-sm btn-outline-success">
+                        <i class="fas fa-download"></i> Mevcut Verileri İndir (CSV)
+                    </a>
+                </div>
             </div>
             <div class="card-body">
                 <form action="csv_handler.php?action=upload&type=5_1&report_id=<?php echo $report_id; ?>" method="POST"
@@ -310,6 +315,7 @@ include '../../includes/header.php';
 
     <button type="button" class="btn btn-secondary mb-3" id="addRow">Satır Ekle</button>
     <button type="button" class="btn btn-danger mb-3" id="clearAllBtn">Tüm Satırları Sil</button>
+    <button type="button" class="btn btn-warning mb-3" id="fillRandomBtn"><i class="fas fa-random"></i> Rastgele Test Verisi İle Doldur</button>
     <br>
     <input type="hidden" name="measurements_json" id="measurements_json">
     <button type="button" class="btn btn-primary" id="saveBtn">Kaydet</button>
@@ -402,6 +408,25 @@ include '../../includes/header.php';
                 }
             });
         }
+    });
+
+    document.getElementById('fillRandomBtn').addEventListener('click', function () {
+        const tableRows = document.querySelectorAll('#measurementsTable tbody tr');
+        tableRows.forEach(tr => {
+            const ik1Input = tr.querySelector('input[name*="[prot_ik1]"]');
+            const zxInput = tr.querySelector('input[name*="[measured_zx_rx]"]');
+            
+            if (ik1Input) {
+                // Random between 0.8 and 2.6, 2 decimal places
+                const randomIk1 = (Math.random() * (2.6 - 0.8) + 0.8).toFixed(2);
+                ik1Input.value = randomIk1;
+            }
+            if (zxInput) {
+                // Random between 0.00 and 5.00, 2 decimal places
+                const randomZx = (Math.random() * 5.0).toFixed(2);
+                zxInput.value = randomZx;
+            }
+        });
     });
 
     // Auto-calculate Ia = In * 10

@@ -114,9 +114,14 @@ include '../../includes/header.php';
 <div class="card mb-4">
     <div class="card-header bg-light d-flex justify-content-between align-items-center">
         <h5 class="mb-0">CSV ile Veri Yükleme</h5>
-        <a href="csv_handler.php?action=download&type=5_2" class="btn btn-sm btn-outline-success">
-            <i class="fas fa-file-download"></i> CSV Şablonu İndir
-        </a>
+        <div>
+            <a href="csv_handler.php?action=download&type=5_2" class="btn btn-sm btn-outline-secondary me-2">
+                <i class="fas fa-file-download"></i> CSV Şablonu İndir
+            </a>
+            <a href="csv_handler.php?action=download&type=5_2&report_id=<?php echo $report_id; ?>&current=1" class="btn btn-sm btn-outline-success">
+                <i class="fas fa-download"></i> Mevcut Verileri İndir (CSV)
+            </a>
+        </div>
     </div>
     <div class="card-body">
         <form action="csv_handler.php?action=upload&type=5_2&report_id=<?php echo $report_id; ?>" method="POST"

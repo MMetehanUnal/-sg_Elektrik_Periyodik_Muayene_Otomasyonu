@@ -21,18 +21,75 @@ if (!in_array($type, ['5_1', '5_2'])) {
 
 try {
     if ($method === 'GET' && $action === 'download') {
+        $reportId = $_GET['report_id'] ?? null;
+        $current = isset($_GET['current']) && $_GET['current'] == '1';
+
+        if ($current && $reportId) {
+            // Rapor sahipliğini doğrula
+            $checkStmt = $pdo->prepare("SELECT id FROM grounding_reports WHERE id = ? AND kurum_id = ?");
+            $checkStmt->execute([$reportId, $kurumId]);
+            if (!$checkStmt->fetch()) jsonError('NOT_FOUND', 'Rapor bulunamadı veya yetkiniz yok.', 404);
+        }
+
         header('Content-Type: text/csv; charset=utf-8');
-        header('Content-Disposition: attachment; filename="topraklama_' . $type . '_sablon.csv"');
+        if ($current && $reportId) {
+            header('Content-Disposition: attachment; filename="topraklama_' . $type . '_mevcut_veriler.csv"');
+        } else {
+            header('Content-Disposition: attachment; filename="topraklama_' . $type . '_sablon.csv"');
+        }
         
         $output = fopen('php://output', 'w');
         fputs($output, $bom =(chr(0xEF) . chr(0xBB) . chr(0xBF))); // UTF-8 BOM
 
         if ($type === '5_1') {
             fputcsv($output, ['point_no', 'point_name', 'prot_in', 'prot_type', 'prot_ia', 'prot_ik1', 'measured_zx_rx', 'limit_zs_ra', 'rcd_type_limits', 'rcd_test_ia', 'rcd_test_ta', 'result']);
-            fputcsv($output, ['1', 'Örnek Nokta', '16', 'C', '160', '250', '0.5', '1.43', '30mA', '30', '25', 'Uygun']);
+            if ($current && $reportId) {
+                $stmt = $pdo->prepare("SELECT * FROM measurements_5_1 WHERE report_id = ? ORDER BY point_no ASC");
+                $stmt->execute([$reportId]);
+                $rows = $stmt->fetchAll();
+                foreach ($rows as $row) {
+                    fputcsv($output, [
+                        $row['point_no'],
+                        $row['point_name'],
+                        $row['prot_in'],
+                        $row['prot_type'],
+                        $row['prot_ia'],
+                        $row['prot_ik1'],
+                        $row['measured_zx_rx'],
+                        $row['limit_zs_ra'],
+                        $row['rcd_type_limits'],
+                        $row['rcd_test_ia'],
+                        $row['rcd_test_ta'],
+                        $row['result']
+                    ]);
+                }
+            } else {
+                fputcsv($output, ['1', 'Örnek Nokta', '16', 'C', '160', '250', '0.5', '1.43', '30mA', '30', '25', 'Uygun']);
+            }
         } else {
             fputcsv($output, ['row_no', 'upstream_panel', 'upstream_rcd_type', 'upstream_rcd_in', 'upstream_rcd_idn', 'upstream_rcd_dt', 'downstream_panel', 'downstream_rcd_type', 'downstream_rcd_idn', 'downstream_rcd_t', 'result']);
-            fputcsv($output, ['1', 'Ana Pano', 'A Tipi', '40', '30', '300', 'Tali Pano', 'AC Tipi', '30', '30', 'Uygun']);
+            if ($current && $reportId) {
+                $stmt = $pdo->prepare("SELECT * FROM measurements_5_2 WHERE report_id = ? ORDER BY row_no ASC");
+                $stmt->execute([$reportId]);
+                $rows = $stmt->fetchAll();
+                foreach ($rows as $row) {
+                    fputcsv($output, [
+                        $row['row_no'],
+                        $row['upstream_panel'],
+                        $row['upstream_rcd_type'],
+                        $row['upstream_rcd_in'],
+                        $row['upstream_rcd_idn'],
+                        $row['upstream_rcd_dt'],
+                        $row['downstream_panel'],
+                        $row['downstream_rcd_type'],
+                        $row['downstream_rcd_idn'],
+                        $row['downstream_rcd_t'],
+                        $row['result']
+                    ]);
+                }
+            } else {
+                fputcsv($output, ['1', 'Ana Pano', 'A Tipi', '40', '30', '300', 'Tali Pano', 'AC Tipi', '30', '30', 'Uygun']);
+            }
         }
 
         fclose($output);
