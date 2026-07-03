@@ -491,7 +491,7 @@ function renderHeader()
                                         <td><?php echo htmlspecialchars($row['prot_ik1']); ?></td>
                                         <td><?php echo htmlspecialchars($row['measured_zx_rx']); ?></td>
                                         <td><?php echo htmlspecialchars($row['limit_zs_ra']); ?></td>
-                                        <td><?php echo htmlspecialchars($row['rcd_type_limits']); ?></td>
+                                        <td><?php echo htmlspecialchars((!isset($row['rcd_type_limits']) || $row['rcd_type_limits'] === '') ? 'AC/40/30' : $row['rcd_type_limits']); ?></td>
                                         <td><?php echo htmlspecialchars($row['rcd_test_ia']); ?></td>
                                         <td><?php echo htmlspecialchars($row['rcd_test_ta']); ?></td>
                                         <td><?php echo htmlspecialchars($row['result']); ?></td>

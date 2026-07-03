@@ -38,8 +38,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $pdo->prepare("DELETE FROM measurements_5_1 WHERE report_id = ?")->execute([$report_id]);
         
         $ins = $pdo->prepare("INSERT INTO measurements_5_1 
-            (report_id, point_no, point_name, prot_in, prot_type, prot_ia, limit_zs_ra, rcd_test_ia, rcd_test_ta, result)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            (report_id, point_no, point_name, prot_in, prot_type, prot_ia, limit_zs_ra, rcd_type_limits, rcd_test_ia, rcd_test_ta, result)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             
         $no = 1;
         foreach ($rows_to_import as $r) {
@@ -57,6 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 $r['acma_egrisi'] ?: '',
                 $ia,
                 '250',
+                'AC/40/30',
                 $r['rcd_ia'] ?: '',
                 $r['rcd_ta'] ?: '',
                 $r['sonuc'] ?: ''
@@ -295,7 +296,7 @@ include '../../includes/header.php';
                         </td>
                         <td><input type="text" class="form-control form-control-sm"
                                 name="measurements[<?php echo $index; ?>][rcd_type_limits]"
-                                value="<?php echo $row['rcd_type_limits'] ?? ''; ?>"></td>
+                                value="<?php echo (!isset($row['rcd_type_limits']) || $row['rcd_type_limits'] === '') ? 'AC/40/30' : htmlspecialchars($row['rcd_type_limits']); ?>"></td>
                         <td><input type="text" class="form-control form-control-sm"
                                 name="measurements[<?php echo $index; ?>][rcd_test_ia]"
                                 value="<?php echo $row['rcd_test_ia'] ?? ''; ?>"></td>
@@ -366,7 +367,11 @@ include '../../includes/header.php';
         var inputs = newRow.querySelectorAll('input, select');
         inputs.forEach(function (input) {
             if (input.tagName === 'INPUT') {
-                input.value = '';
+                if (input.name.includes('[rcd_type_limits]')) {
+                    input.value = 'AC/40/30';
+                } else {
+                    input.value = '';
+                }
             } else if (input.tagName === 'SELECT' && input.name.includes('[limit_zs_ra]')) {
                 input.value = '250';
             }
@@ -400,6 +405,8 @@ include '../../includes/header.php';
                 if (input.tagName === 'INPUT') {
                     if (input.type === 'number' && input.name.includes('[point_no]')) {
                         input.value = '1';
+                    } else if (input.name.includes('[rcd_type_limits]')) {
+                        input.value = 'AC/40/30';
                     } else {
                         input.value = '';
                     }
