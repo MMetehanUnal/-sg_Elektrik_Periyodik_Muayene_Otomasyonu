@@ -34,19 +34,21 @@ include '../../includes/header.php';
                 <thead class="table-light">
                     <tr>
                         <th>Rapor No</th>
+                        <th>Firma Adı Eki</th>
                         <th>Rapor Tarihi</th>
                         <th class="text-center">İşlemler</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php
-                    $stmt = $pdo->prepare("SELECT id, report_no, report_date FROM grounding_reports WHERE kurum_id = ? ORDER BY report_date DESC");
+                    $stmt = $pdo->prepare("SELECT id, report_no, report_date, firma_adi_eki FROM grounding_reports WHERE kurum_id = ? ORDER BY report_date DESC");
                     $stmt->execute([$kurum_id]);
                     while ($row = $stmt->fetch()):
                         $is_highlighted = ($highlight_id == $row['id']);
                         ?>
                         <tr class="<?php echo $is_highlighted ? 'table-warning' : ''; ?>">
                             <td><strong><?php echo htmlspecialchars($row['report_no']); ?></strong></td>
+                            <td><?php echo htmlspecialchars($row['firma_adi_eki'] ?? '-'); ?></td>
                             <td><?php echo date('d.m.Y', strtotime($row['report_date'])); ?></td>
                             <td class="text-center">
                                 <div class="btn-group">
@@ -62,7 +64,7 @@ include '../../includes/header.php';
                     <?php endwhile; ?>
                     <?php if ($stmt->rowCount() == 0): ?>
                         <tr>
-                            <td colspan="3" class="text-center py-4 text-muted">Henüz topraklama raporu oluşturulmamış.</td>
+                            <td colspan="4" class="text-center py-4 text-muted">Henüz topraklama raporu oluşturulmamış.</td>
                         </tr>
                     <?php endif; ?>
                 </tbody>

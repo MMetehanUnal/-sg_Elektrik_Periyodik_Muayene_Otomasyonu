@@ -452,7 +452,10 @@ include '../../includes/header.php';
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">İç Tesisat – Pano Sonuçları
         <small class="text-muted fs-6">(Rapor:
-            <?php echo htmlspecialchars($rpt['report_no']); ?>)
+            <?php echo htmlspecialchars($rpt['report_no']); ?>
+            <?php if (!empty($rpt['firma_adi_eki'])): ?>
+                - <?php echo htmlspecialchars($rpt['firma_adi_eki']); ?>
+            <?php endif; ?>)
         </small>
     </h1>
     <div class="d-flex gap-2">
