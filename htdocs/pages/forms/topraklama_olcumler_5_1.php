@@ -43,7 +43,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             
         $no = 1;
         foreach ($rows_to_import as $r) {
-            $point_name = ($r['panel_name'] ? $r['panel_name'] . " - " : "") . ($r['linye_adi'] ?: '');
+            $pName = trim($r['panel_name'] ?? '');
+            $lName = trim($r['linye_adi'] ?? '');
+            if ($lName === '') {
+                $point_name = $pName;
+            } elseif ($pName === '' || $pName === $lName) {
+                $point_name = $lName;
+            } else {
+                $point_name = $pName . " - " . $lName;
+            }
             $in_a = $r['in_a'] ?: '';
             $ia = '';
             if (is_numeric($in_a)) {

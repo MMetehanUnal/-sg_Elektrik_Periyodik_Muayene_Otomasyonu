@@ -778,8 +778,16 @@ function renderHeader()
                             <tr>
                                 <td><?php echo $idx + 1; ?></td>
                                 <td style="text-align: left; padding-left: 3px;">
-                                    <strong><?php echo htmlspecialchars($r['panel_display_name']); ?>:</strong>
-                                    <?php echo htmlspecialchars($r['linye_adi']); ?>
+                                    <?php 
+                                    $pName = trim($r['panel_display_name'] ?? '');
+                                    $lName = trim($r['linye_adi'] ?? '');
+                                    if ($lName === '' || $pName === $lName): 
+                                    ?>
+                                        <strong><?php echo htmlspecialchars($pName ?: $lName); ?></strong>
+                                    <?php else: ?>
+                                        <strong><?php echo htmlspecialchars($pName); ?>:</strong>
+                                        <?php echo htmlspecialchars($lName); ?>
+                                    <?php endif; ?>
                                 </td>
                                 <td><?php echo htmlspecialchars($r['acma_egrisi']); ?></td>
                                 <td><?php echo htmlspecialchars($r['kutup_sayisi']); ?></td>
