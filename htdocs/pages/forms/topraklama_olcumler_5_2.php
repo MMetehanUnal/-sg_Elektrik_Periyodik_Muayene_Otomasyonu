@@ -68,15 +68,29 @@ if (count($existing_measurements) == 0) {
         foreach ($data_51 as $row51) {
             $existing_measurements[] = [
                 'row_no' => $idx++,
+                'upstream_panel' => 'Ana pano',
+                'upstream_rcd_type' => 'AC',
+                'upstream_rcd_in' => '40',
+                'upstream_rcd_idn' => '30',
+                'upstream_rcd_dt' => '0',
                 'downstream_panel' => $row51['point_name'],
                 'downstream_rcd_type' => 'AC',
                 'downstream_rcd_idn' => $row51['rcd_test_ia'],
-                'downstream_rcd_t' => $row51['rcd_test_ta']
+                'downstream_rcd_t' => $row51['rcd_test_ta'],
+                'result' => '1'
             ];
         }
     } else {
         for ($i = 1; $i <= 2; $i++) {
-            $existing_measurements[] = ['row_no' => $i];
+            $existing_measurements[] = [
+                'row_no' => $i,
+                'upstream_panel' => 'Ana pano',
+                'upstream_rcd_type' => 'AC',
+                'upstream_rcd_in' => '40',
+                'upstream_rcd_idn' => '30',
+                'upstream_rcd_dt' => '0',
+                'result' => '1'
+            ];
         }
     }
 }
@@ -175,7 +189,10 @@ include '../../includes/header.php';
                             <select class="form-select form-select-sm" name="measurements[<?php echo $index; ?>][upstream_panel]">
                                 <option value="">Seçiniz</option>
                                 <?php foreach (['Ana pano', 'Trafo', 'Sayaç Panosu'] as $opt): ?>
-                                    <option value="<?php echo $opt; ?>" <?php echo (isset($row['upstream_panel']) && $row['upstream_panel'] == $opt) ? 'selected' : ''; ?>><?php echo $opt; ?></option>
+                                    <?php 
+                                        $val = (!isset($row['upstream_panel']) || $row['upstream_panel'] === '') ? 'Ana pano' : $row['upstream_panel'];
+                                    ?>
+                                    <option value="<?php echo $opt; ?>" <?php echo ($val == $opt) ? 'selected' : ''; ?>><?php echo $opt; ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </td>
@@ -190,7 +207,10 @@ include '../../includes/header.php';
                             <select class="form-select form-select-sm" name="measurements[<?php echo $index; ?>][upstream_rcd_in]">
                                 <option value="">Seçiniz</option>
                                 <?php foreach ([16, 25, 32, 40, 63, 80, 100, 125] as $opt): ?>
-                                    <option value="<?php echo $opt; ?>" <?php echo (isset($row['upstream_rcd_in']) && $row['upstream_rcd_in'] == $opt) ? 'selected' : ''; ?>><?php echo $opt; ?></option>
+                                    <?php 
+                                        $val = (!isset($row['upstream_rcd_in']) || $row['upstream_rcd_in'] === '') ? '40' : $row['upstream_rcd_in'];
+                                    ?>
+                                    <option value="<?php echo $opt; ?>" <?php echo ($val == $opt) ? 'selected' : ''; ?>><?php echo $opt; ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </td>
@@ -198,13 +218,16 @@ include '../../includes/header.php';
                             <select class="form-select form-select-sm" name="measurements[<?php echo $index; ?>][upstream_rcd_idn]">
                                 <option value="">Seçiniz</option>
                                 <?php foreach ([30, 300] as $opt): ?>
-                                    <option value="<?php echo $opt; ?>" <?php echo (isset($row['upstream_rcd_idn']) && $row['upstream_rcd_idn'] == $opt) ? 'selected' : ''; ?>><?php echo $opt; ?></option>
+                                    <?php 
+                                        $val = (!isset($row['upstream_rcd_idn']) || $row['upstream_rcd_idn'] === '') ? '30' : $row['upstream_rcd_idn'];
+                                    ?>
+                                    <option value="<?php echo $opt; ?>" <?php echo ($val == $opt) ? 'selected' : ''; ?>><?php echo $opt; ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </td>
                         <td><input type="text" class="form-control form-control-sm"
                                 name="measurements[<?php echo $index; ?>][upstream_rcd_dt]"
-                                value="<?php echo $row['upstream_rcd_dt'] ?? ''; ?>"></td>
+                                value="<?php echo (!isset($row['upstream_rcd_dt']) || $row['upstream_rcd_dt'] === '') ? '0' : htmlspecialchars($row['upstream_rcd_dt']); ?>"></td>
                         <td><input type="text" class="form-control form-control-sm"
                                 name="measurements[<?php echo $index; ?>][downstream_panel]"
                                 value="<?php echo $row['downstream_panel'] ?? ''; ?>"></td>
@@ -223,7 +246,7 @@ include '../../includes/header.php';
                                 value="<?php echo $row['downstream_rcd_t'] ?? ''; ?>"></td>
                         <td><input type="text" class="form-control form-control-sm"
                                 name="measurements[<?php echo $index; ?>][result]"
-                                value="<?php echo $row['result'] ?? ''; ?>"></td>
+                                value="<?php echo (!isset($row['result']) || $row['result'] === '') ? '1' : htmlspecialchars($row['result']); ?>"></td>
                         <td><button type="button" class="btn btn-danger btn-sm remove-row"><i
                                     class="fas fa-times"></i></button></td>
                     </tr>
@@ -275,10 +298,25 @@ include '../../includes/header.php';
         var inputs = newRow.querySelectorAll('input, select');
         inputs.forEach(function (input) {
             if (input.tagName === 'INPUT') {
-                input.value = '';
-            } else {
-                // Keep current select value or set default? 
-                // Usually for selects we just keep as is or set to first option.
+                if (input.name.includes('[upstream_rcd_dt]')) {
+                    input.value = '0';
+                } else if (input.name.includes('[result]')) {
+                    input.value = '1';
+                } else {
+                    input.value = '';
+                }
+            } else if (input.tagName === 'SELECT') {
+                if (input.name.includes('[upstream_panel]')) {
+                    input.value = 'Ana pano';
+                } else if (input.name.includes('[upstream_rcd_in]')) {
+                    input.value = '40';
+                } else if (input.name.includes('[upstream_rcd_idn]')) {
+                    input.value = '30';
+                } else if (input.name.includes('[upstream_rcd_type]')) {
+                    input.value = 'AC';
+                } else if (input.name.includes('[downstream_rcd_type]')) {
+                    input.value = 'AC';
+                }
             }
             input.name = input.name.replace(/\[\d+\]/, '[' + rowCount + ']');
         });
