@@ -100,6 +100,14 @@ $s63stmt = $pdo->prepare("SELECT * FROM ic_tesisat_section6_3_rows WHERE report_
 $s63stmt->execute([$id]);
 $s63rows = $s63stmt->fetchAll();
 
+// Only show rows where at least one of 'Eni', 'Boyu', or 'Zemin izolasyon direnci' is filled
+$s63rows = array_filter($s63rows, function($r) {
+    $eni = isset($r['eni']) ? trim($r['eni']) : '';
+    $boyu = isset($r['boyu']) ? trim($r['boyu']) : '';
+    $direnc = isset($r['direnc']) ? trim($r['direnc']) : '';
+    return !($eni === '' && $boyu === '' && $direnc === '');
+});
+
 // Helper for checkboxes/radios
 function chk($val, $target)
 {
