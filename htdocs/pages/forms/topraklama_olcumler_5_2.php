@@ -12,6 +12,13 @@ if (!$report_id) {
 
 // Handle Form Submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Handle Reset / Re-import from 5.1
+    if (isset($_POST['action']) && $_POST['action'] === 'reset_from_5_1') {
+        $stmt = $pdo->prepare("DELETE FROM measurements_5_2 WHERE report_id = ?");
+        $stmt->execute([$report_id]);
+        redirect("topraklama_olcumler_5_2.php?report_id=$report_id&success=" . urlencode("5.2 verileri 5.1'den yeniden aktarılarak sıfırlandı."));
+    }
+
     $measurements = [];
 
     // Check if data came as JSON (to bypass max_input_vars)
@@ -66,6 +73,12 @@ if (count($existing_measurements) == 0) {
     if (count($data_51) > 0) {
         $idx = 1;
         foreach ($data_51 as $row51) {
+            $dpName = $row51['point_name'];
+            $parts = explode(' - ', $dpName);
+            if (count($parts) === 2 && trim($parts[0]) === trim($parts[1])) {
+                $dpName = trim($parts[0]);
+            }
+
             $existing_measurements[] = [
                 'row_no' => $idx++,
                 'upstream_panel' => 'Ana pano',
@@ -73,7 +86,7 @@ if (count($existing_measurements) == 0) {
                 'upstream_rcd_in' => '40',
                 'upstream_rcd_idn' => '30',
                 'upstream_rcd_dt' => '0',
-                'downstream_panel' => $row51['point_name'],
+                'downstream_panel' => $dpName,
                 'downstream_rcd_type' => 'AC',
                 'downstream_rcd_idn' => $row51['rcd_test_ia'],
                 'downstream_rcd_t' => $row51['rcd_test_ta'],
@@ -101,6 +114,12 @@ include '../../includes/header.php';
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">5.2 RCD Selektivite Kontrolü</h1>
     <div class="btn-toolbar mb-2 mb-md-0">
+        <form method="POST" action="" style="display:inline;" onsubmit="return confirm('Mevcut 5.2 verileri silinecek ve 5.1\'den yeniden aktarılacaktır. Emin misiniz?');">
+            <input type="hidden" name="action" value="reset_from_5_1">
+            <button type="submit" class="btn btn-warning me-2">
+                <i class="fas fa-sync-alt me-1"></i> 5.1'den Yeniden Aktar (Sıfırla)
+            </button>
+        </form>
         <a href="topraklama_olcumler_5_1.php?report_id=<?php echo $report_id; ?>"
             class="btn btn-secondary me-2">Geri</a>
         <a href="../raporlar.php" class="btn btn-primary">Raporlara Git</a>

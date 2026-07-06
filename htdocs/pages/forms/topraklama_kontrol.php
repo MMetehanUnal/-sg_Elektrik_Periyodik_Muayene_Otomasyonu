@@ -198,6 +198,11 @@ $stmt = $pdo->prepare("SELECT * FROM facility_info WHERE kurum_id = ?");
 $stmt->execute([$kurum_id]);
 $facility_info = $stmt->fetch();
 
+// Fetch unique firma_adi_eki from internal_installation_reports for datalist autocomplete
+$stmt_ekler = $pdo->prepare("SELECT DISTINCT firma_adi_eki FROM internal_installation_reports WHERE kurum_id = ? AND firma_adi_eki IS NOT NULL AND firma_adi_eki != '' ORDER BY firma_adi_eki ASC");
+$stmt_ekler->execute([$kurum_id]);
+$ic_tesisat_ekleri = $stmt_ekler->fetchAll(PDO::FETCH_COLUMN);
+
 include '../../includes/header.php';
 ?>
 
@@ -221,9 +226,19 @@ include '../../includes/header.php';
                     <div class="row">
                         <div class="col-md-3 mb-3">
                             <label class="form-label">Firma Adı Eki</label>
-                            <input type="text" class="form-control" name="firma_adi_eki"
-                                value="<?php echo htmlspecialchars($report['firma_adi_eki'] ?? ''); ?>"
-                                placeholder="Örn: A Blok, 2. Kısım">
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="firma_adi_eki" id="firma_adi_eki" list="ic_tesisat_ekleri"
+                                    value="<?php echo htmlspecialchars($report['firma_adi_eki'] ?? ''); ?>"
+                                    placeholder="Örn: A Blok, 2. Kısım">
+                                <button class="btn btn-outline-secondary" type="button" id="btn_fetch_ic_tesisat" title="İç Tesisattan Bilgileri Getir">
+                                    <i class="fas fa-sync-alt"></i> Getir
+                                </button>
+                            </div>
+                            <datalist id="ic_tesisat_ekleri">
+                                <?php foreach ($ic_tesisat_ekleri as $ek): ?>
+                                    <option value="<?php echo htmlspecialchars($ek); ?>"></option>
+                                <?php endforeach; ?>
+                            </datalist>
                         </div>
                         <div class="col-md-3 mb-3">
                             <label class="form-label">Rapor Tarihi</label>
@@ -649,5 +664,84 @@ include '../../includes/header.php';
         <button type="submit" class="btn btn-primary btn-lg">Kaydet ve İlerle</button>
     </div>
 </form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const btnFetch = document.getElementById('btn_fetch_ic_tesisat');
+    const inputFirmaEki = document.getElementById('firma_adi_eki');
+
+    if (btnFetch && inputFirmaEki) {
+        btnFetch.addEventListener('click', function() {
+            const firmaEki = inputFirmaEki.value.trim();
+            if (!firmaEki) {
+                alert('Lütfen sorgulamak istediğiniz Firma Adı Eki bilgisini girin.');
+                return;
+            }
+
+            // Disable button and show spinner
+            const originalHtml = btnFetch.innerHTML;
+            btnFetch.disabled = true;
+            btnFetch.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+            fetch(`get_ic_tesisat_firma_bilgileri.php?firma_adi_eki=${encodeURIComponent(firmaEki)}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Ağ hatası oluştu.');
+                    }
+                    return response.json();
+                })
+                .then(result => {
+                    if (result.success && result.data) {
+                        const data = result.data;
+                        
+                        // Map values to fields
+                        if (data.report_date) {
+                            const reportDateEl = document.querySelector('input[name="report_date"]');
+                            if (reportDateEl) reportDateEl.value = data.report_date;
+                        }
+                        if (data.isg_katip_id) {
+                            const isgKatipEl = document.querySelector('input[name="isg_katip_id"]');
+                            if (isgKatipEl) isgKatipEl.value = data.isg_katip_id;
+                        }
+                        if (data.start_date) {
+                            const startDateEl = document.querySelector('input[name="start_date"]');
+                            if (startDateEl) startDateEl.value = data.start_date;
+                        }
+                        if (data.end_date) {
+                            const endDateEl = document.querySelector('input[name="end_date"]');
+                            if (endDateEl) endDateEl.value = data.end_date;
+                        }
+                        if (data.next_control_date) {
+                            const nextControlEl = document.querySelector('input[name="next_control_date"]');
+                            if (nextControlEl) nextControlEl.value = data.next_control_date;
+                        }
+
+                        // Success notification / visually highlight the inputs
+                        const inputsToHighlight = ['report_date', 'isg_katip_id', 'start_date', 'end_date', 'next_control_date'];
+                        inputsToHighlight.forEach(name => {
+                            const el = document.querySelector(`input[name="${name}"]`);
+                            if (el) {
+                                el.style.transition = 'background-color 0.5s';
+                                el.style.backgroundColor = '#d1e7dd'; // light green
+                                setTimeout(() => {
+                                    el.style.backgroundColor = '';
+                                }, 1500);
+                            }
+                        });
+                    } else {
+                        alert(result.error || 'İç tesisat raporu bulunamadı.');
+                    }
+                })
+                .catch(error => {
+                    alert('Bir hata oluştu: ' + error.message);
+                })
+                .finally(() => {
+                    btnFetch.disabled = false;
+                    btnFetch.innerHTML = originalHtml;
+                });
+        });
+    }
+});
+</script>
 
 <?php include '../../includes/footer.php'; ?>

@@ -91,7 +91,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $pid = (int) $_POST['panel_id'];
         $pdo->prepare("DELETE FROM ic_tesisat_panels WHERE id = ? AND report_id = ?")->execute([$pid, $report_id]);
         $msg = "Pano silindi.";
-    } elseif ($action === 'save_all_standard_section5') {
+    } elseif ($action === 'save_all_standard_section5' || $action === 'save_all_not_suitable_section5') {
+        $defaultValue = ($action === 'save_all_standard_section5') ? 'U' : 'UD';
+        
         // Fetch all panels for this report
         $stmt = $pdo->prepare("SELECT * FROM ic_tesisat_panels WHERE report_id=? ORDER BY panel_order");
         $stmt->execute([$report_id]);
@@ -118,7 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             // Delete existing section 5 answers for this panel
             $pdo->prepare("DELETE FROM ic_tesisat_section5 WHERE panel_id = ?")->execute([$pid]);
             
-            // Loop through all questions and insert 'U' or default text
+            // Loop through all questions and insert $defaultValue or default text
             foreach ($s5_questions as $group => $items) {
                 foreach ($items as $qkey => $label) {
                     if ($qkey === 'fotograf_tarihi') {
@@ -126,12 +128,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     } elseif ($qkey === 'fotograf_no') {
                         $ins->execute([$pid, $qkey, $panel_idx]);
                     } else {
-                        $ins->execute([$pid, $qkey, 'U']);
+                        $ins->execute([$pid, $qkey, $defaultValue]);
                     }
                 }
             }
         }
-        $msg = "Bütün panolar için 5. Gözle Muayene bölümü standart bilgilerle ('U' - Uygun) veritabanına kaydedildi.";
+        $msgText = ($defaultValue === 'U') ? "uygun ('U') olarak" : "uygun değil ('UD') olarak";
+        $msg = "Bütün panolar için 5. Gözle Muayene bölümü {$msgText} veritabanına kaydedildi.";
     } elseif ($action === 'fill_all_test_data') {
         // Fetch all panels for this report
         $stmt = $pdo->prepare("SELECT * FROM ic_tesisat_panels WHERE report_id=? ORDER BY panel_order");
@@ -542,10 +545,16 @@ include '../../includes/header.php';
         <!-- Top bulk actions bar -->
         <div class="mb-3 d-flex gap-2 justify-content-end">
             <?php if ($section === '5'): ?>
-                <form method="POST" onsubmit="return confirm('Tüm panolar için Gözle Muayene bölümünü standart değerlerle (U - Uygun) doldurmak istiyor musunuz?')">
+                <form method="POST" onsubmit="return confirm('Tüm panolar için Gözle Muayene bölümünü UYGUN (U) olarak doldurmak istiyor musunuz?')" style="display:inline;">
                     <input type="hidden" name="action" value="save_all_standard_section5">
-                    <button type="submit" class="btn btn-warning btn-sm fw-bold shadow-sm text-dark">
-                        <i class="fas fa-check-double me-1"></i> 5. STANDART BİLGİ KAYDET
+                    <button type="submit" class="btn btn-success btn-sm fw-bold shadow-sm">
+                        <i class="fas fa-check-circle me-1"></i> 5. TÜMÜNÜ UYGUN OLARAK KAYDET
+                    </button>
+                </form>
+                <form method="POST" onsubmit="return confirm('Tüm panolar için Gözle Muayene bölümünü UYGUN DEĞİL (UD) olarak doldurmak istiyor musunuz?')" style="display:inline;">
+                    <input type="hidden" name="action" value="save_all_not_suitable_section5">
+                    <button type="submit" class="btn btn-danger btn-sm fw-bold shadow-sm">
+                        <i class="fas fa-times-circle me-1"></i> 5. TÜMÜNÜ UYGUN DEĞİL OLARAK KAYDET
                     </button>
                 </form>
             <?php elseif ($section === '6'): ?>
