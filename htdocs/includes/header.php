@@ -99,16 +99,29 @@
                                 <i class="fas fa-user-tie me-2"></i> Yetkili Kişiler
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link side-link <?php echo basename($_SERVER['PHP_SELF']) == 'cihazlar.php' ? 'active' : ''; ?>"
+                                href="/pages/cihazlar.php">
+                                <i class="fas fa-tools me-2"></i> Cihazlar
+                            </a>
+                        </li>
 
                         <li class="nav-section-title mt-4 mb-2">İŞLEMLER</li>
                         <li class="nav-item">
                             <a class="nav-link side-link <?php echo basename($_SERVER['PHP_SELF']) == 'tesis_secimi.php' ? 'active' : ''; ?>"
                                 href="/pages/tesis_secimi.php">
-                                <i class="fas fa-check-circle me-2"></i> Tesis Seçimi
+                                <i class="fas fa-check-circle me-2"></i> Kurum Seçimi
                             </a>
                         </li>
 
                         <?php if (isset($_SESSION['active_institution_id'])): ?>
+                            <li class="nav-item">
+                                <a class="nav-link side-link <?php echo basename($_SERVER['PHP_SELF']) == 'tesis_bilgileri.php' ? 'active' : ''; ?>"
+                                    href="/pages/forms/tesis_bilgileri.php">
+                                    <i class="fas fa-info-circle me-2"></i> Kurum Bilgileri
+                                </a>
+                            </li>
+
                             <li class="nav-item">
                                 <a class="nav-link side-link has-submenu" data-bs-toggle="collapse" href="#periyodikSubmenu"
                                     role="button" aria-expanded="false">
@@ -119,11 +132,6 @@
                                 </a>
                                 <div class="collapse" id="periyodikSubmenu">
                                     <ul class="nav flex-column ms-3 mt-1">
-                                        <li class="nav-item">
-                                            <a class="nav-link side-link-sub" href="/pages/forms/tesis_bilgileri.php">
-                                                Tesis Bilgileri
-                                            </a>
-                                        </li>
                                         <li class="nav-item">
                                             <a class="nav-link side-link-sub" href="/pages/forms/topraklama_kontrol.php">
                                                 Topraklama
@@ -143,6 +151,46 @@
                                         <li class="nav-item">
                                             <a class="nav-link side-link-sub" href="/pages/forms/yangin_algilama_kontrol.php">
                                                 Yangın Algılama
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link side-link-sub" href="/pages/forms/sihhi_tesisat_kontrol.php">
+                                                Sıhhi Tesisat
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link side-link-sub" href="/pages/forms/gaz_tesisat_kontrol.php">
+                                                Gaz Tesisatı
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link side-link-sub" href="/pages/forms/isinma_tesisat_kontrol.php">
+                                                Isınma Tesisatı
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link side-link-sub" href="/pages/forms/genlesme_tanki_kontrol.php">
+                                                Genleşme Tankı
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link side-link-sub" href="/pages/forms/engelli_rampasi_kontrol.php">
+                                                Engelli Rampası
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link side-link-sub" href="/pages/forms/boyler_tanki_kontrol.php">
+                                                Boyler Tankı
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link side-link-sub" href="/pages/forms/jenarator_kontrol.php">
+                                                Jeneratör
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link side-link-sub" href="/pages/forms/kamera_bakim_kontrol.php">
+                                                Kamera Bakım
                                             </a>
                                         </li>
                                     </ul>
@@ -179,6 +227,54 @@
                                             <a class="nav-link side-link-sub"
                                                 href="/pages/results/yangin_algilama_sonuclar.php">
                                                 Yangın Algılama
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link side-link-sub"
+                                                href="/pages/results/sihhi_tesisat_sonuclar.php">
+                                                Sıhhi Tesisat
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link side-link-sub"
+                                                href="/pages/results/gaz_tesisat_sonuclar.php">
+                                                Gaz Tesisatı
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link side-link-sub"
+                                                href="/pages/results/isinma_tesisat_sonuclar.php">
+                                                Isınma Tesisatı
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link side-link-sub"
+                                                href="/pages/results/genlesme_tanki_sonuclar.php">
+                                                Genleşme Tankı
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link side-link-sub"
+                                                href="/pages/results/engelli_rampasi_sonuclar.php">
+                                                Engelli Rampası
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link side-link-sub"
+                                                href="/pages/results/boyler_tanki_sonuclar.php">
+                                                Boyler Tankı
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link side-link-sub"
+                                                href="/pages/results/jenarator_sonuclar.php">
+                                                Jeneratör
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link side-link-sub"
+                                                href="/pages/results/kamera_bakim_sonuclar.php">
+                                                Kamera Bakım
                                             </a>
                                         </li>
                                     </ul>

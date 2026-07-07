@@ -10,6 +10,7 @@ if (!isset($_SESSION['active_institution_id'])) {
 }
 
 $kurum_id = $_SESSION['active_institution_id'];
+$facility_defaults = getFacilityDefaults($pdo, $kurum_id);
 
 // Check if editing
 $report_id = isset($_GET['id']) ? cleanInput($_GET['id']) : null;
@@ -644,7 +645,7 @@ include '../../includes/header.php';
                         <select class="form-select" name="thermal_camera_id">
                             <option value="">Seçiniz</option>
                             <?php foreach ($thermal_cameras as $d): ?>
-                                <option value="<?php echo $d['id']; ?>" <?php echo (isset($report['thermal_camera_id']) && $report['thermal_camera_id'] == $d['id']) ? 'selected' : ''; ?>>
+                                <option value="<?php echo $d['id']; ?>" <?php echo ((isset($report['thermal_camera_id']) && $report['thermal_camera_id'] == $d['id']) || (empty($report) && !empty($facility_defaults['default_thermal_device_id']) && $facility_defaults['default_thermal_device_id'] == $d['id'])) ? 'selected' : ''; ?>>
                                     <?php echo htmlspecialchars($d['device_name'] . ' (' . $d['serial_no'] . ')'); ?>
                                 </option>
                             <?php endforeach; ?>
@@ -668,7 +669,7 @@ include '../../includes/header.php';
                             <select class="form-select" name="device1_id">
                                 <option value="">Seçiniz</option>
                                 <?php foreach ($measuring_devices as $d): ?>
-                                    <option value="<?php echo $d['id']; ?>" <?php echo (isset($report['device1_id']) && $report['device1_id'] == $d['id']) ? 'selected' : ''; ?>>
+                                    <option value="<?php echo $d['id']; ?>" <?php echo ((isset($report['device1_id']) && $report['device1_id'] == $d['id']) || (empty($report) && !empty($facility_defaults['default_device_id']) && $facility_defaults['default_device_id'] == $d['id'])) ? 'selected' : ''; ?>>
                                         <?php echo htmlspecialchars($d['device_name'] . ' (' . $d['serial_no'] . ')'); ?>
                                     </option>
                                 <?php endforeach; ?>
@@ -786,7 +787,7 @@ include '../../includes/header.php';
                         <select class="form-select" name="authorized_person_id" required>
                             <option value="">Seçiniz</option>
                             <?php foreach ($authorized_persons as $p): ?>
-                                <option value="<?php echo $p['id']; ?>" <?php echo (isset($report['authorized_person_id']) && $report['authorized_person_id'] == $p['id']) ? 'selected' : ''; ?>>
+                                <option value="<?php echo $p['id']; ?>" <?php echo ((isset($report['authorized_person_id']) && $report['authorized_person_id'] == $p['id']) || (empty($report) && !empty($facility_defaults['default_authorized_person_id']) && $facility_defaults['default_authorized_person_id'] == $p['id'])) ? 'selected' : ''; ?>>
                                     <?php echo htmlspecialchars($p['adi_soyadi'] . ' (' . $p['meslegi'] . ')'); ?>
                                 </option>
                             <?php endforeach; ?>

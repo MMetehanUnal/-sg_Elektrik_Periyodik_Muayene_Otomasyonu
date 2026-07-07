@@ -5,6 +5,17 @@ require_once '../../includes/auth.php';
 
 requireLogin();
 
+// Auto-create default fields in facility_info if not exists
+try {
+    $pdo->exec("ALTER TABLE facility_info ADD COLUMN default_authorized_person_id INT DEFAULT NULL");
+} catch (PDOException $e) {}
+try {
+    $pdo->exec("ALTER TABLE facility_info ADD COLUMN default_device_id INT DEFAULT NULL");
+} catch (PDOException $e) {}
+try {
+    $pdo->exec("ALTER TABLE facility_info ADD COLUMN default_thermal_device_id INT DEFAULT NULL");
+} catch (PDOException $e) {}
+
 // Check if institution is selected
 if (!isset($_SESSION['active_institution_id'])) {
     redirect('/pages/tesis_secimi.php');
@@ -16,20 +27,24 @@ $warning_msg = '';
 
 // Handle Form Submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $enerji_saglayan = cleanInput($_POST['enerji_saglayan']);
-    $sebeke_tipi = cleanInput($_POST['sebeke_tipi']);
-    $sebeke_gerilimi = cleanInput($_POST['sebeke_gerilimi']);
+    $enerji_saglayan = cleanInput($_POST['enerji_saglayan'] ?? '');
+    $sebeke_tipi = cleanInput($_POST['sebeke_tipi'] ?? '');
+    $sebeke_gerilimi = cleanInput($_POST['sebeke_gerilimi'] ?? '');
     $proje_var_mi = isset($_POST['proje_var_mi']) ? 1 : 0;
     $sema_var_mi = isset($_POST['sema_var_mi']) ? 1 : 0;
-    $yapi_cinsi = cleanInput($_POST['yapi_cinsi']);
-    $kullanim_amaci = cleanInput($_POST['kullanim_amaci']);
-    $sozlesme_id = cleanInput($_POST['sozlesme_id']);
+    $yapi_cinsi = cleanInput($_POST['yapi_cinsi'] ?? '');
+    $kullanim_amaci = cleanInput($_POST['kullanim_amaci'] ?? '');
+    $sozlesme_id = cleanInput($_POST['sozlesme_id'] ?? '');
     $son_kontrol_tarihi = !empty($_POST['son_kontrol_tarihi']) ? $_POST['son_kontrol_tarihi'] : null;
-    $weather_condition = cleanInput($_POST['weather_condition']);
-    $ground_moisture = cleanInput($_POST['ground_moisture']);
-    $grounding_type = cleanInput($_POST['grounding_type']);
-    $control_reason = cleanInput($_POST['control_reason']);
+    $weather_condition = cleanInput($_POST['weather_condition'] ?? '');
+    $ground_moisture = cleanInput($_POST['ground_moisture'] ?? '');
+    $grounding_type = cleanInput($_POST['grounding_type'] ?? '');
+    $control_reason = cleanInput($_POST['control_reason'] ?? '');
     $next_control_date = !empty($_POST['next_control_date']) ? $_POST['next_control_date'] : null;
+    
+    $default_authorized_person_id = !empty($_POST['default_authorized_person_id']) ? intval($_POST['default_authorized_person_id']) : null;
+    $default_device_id = !empty($_POST['default_device_id']) ? intval($_POST['default_device_id']) : null;
+    $default_thermal_device_id = !empty($_POST['default_thermal_device_id']) ? intval($_POST['default_thermal_device_id']) : null;
 
     // New: Update Institution Start/End Dates (Defaults)
     $start_date = !empty($_POST['start_date']) ? $_POST['start_date'] : null;
@@ -51,7 +66,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $pdo->prepare("UPDATE facility_info SET 
             enerji_saglayan=?, sebeke_tipi=?, sebeke_gerilimi=?, proje_var_mi=?, sema_var_mi=?, 
             yapi_cinsi=?, kullanim_amaci=?, sozlesme_id=?, son_kontrol_tarihi=?,
-            weather_condition=?, ground_moisture=?, grounding_type=?, control_reason=?, next_control_date=?
+            weather_condition=?, ground_moisture=?, grounding_type=?, control_reason=?, next_control_date=?,
+            default_authorized_person_id=?, default_device_id=?, default_thermal_device_id=?
             WHERE kurum_id=?");
         $stmt->execute([
             $enerji_saglayan,
@@ -68,6 +84,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $grounding_type,
             $control_reason,
             $next_control_date,
+            $default_authorized_person_id,
+            $default_device_id,
+            $default_thermal_device_id,
             $kurum_id
         ]);
         $success_msg = "Bilgiler güncellendi.";
@@ -75,8 +94,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $pdo->prepare("INSERT INTO facility_info 
             (kurum_id, enerji_saglayan, sebeke_tipi, sebeke_gerilimi, proje_var_mi, sema_var_mi, 
             yapi_cinsi, kullanim_amaci, sozlesme_id, son_kontrol_tarihi,
-            weather_condition, ground_moisture, grounding_type, control_reason, next_control_date)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            weather_condition, ground_moisture, grounding_type, control_reason, next_control_date,
+            default_authorized_person_id, default_device_id, default_thermal_device_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([
             $kurum_id,
             $enerji_saglayan,
@@ -92,7 +112,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $ground_moisture,
             $grounding_type,
             $control_reason,
-            $next_control_date
+            $next_control_date,
+            $default_authorized_person_id,
+            $default_device_id,
+            $default_thermal_device_id
         ]);
         $success_msg = "Bilgiler kaydedildi.";
     }
@@ -124,7 +147,10 @@ if (!$info) {
         'ground_moisture' => '',
         'grounding_type' => '',
         'control_reason' => '',
-        'next_control_date' => ''
+        'next_control_date' => '',
+        'default_authorized_person_id' => null,
+        'default_device_id' => null,
+        'default_thermal_device_id' => null
     ];
     $warning_msg = "Bilgilerin tamamlanması beklenmektedir.";
 } else {
@@ -136,11 +162,30 @@ if (!$info) {
     }
 }
 
+// Fetch all authorized persons for defaults dropdown
+$stmt_ap = $pdo->query("SELECT id, adi_soyadi FROM authorized_persons ORDER BY adi_soyadi ASC");
+$authorized_persons = $stmt_ap->fetchAll();
+
+// Fetch all measurement devices for defaults dropdown
+$stmt_dev = $pdo->prepare("SELECT id, device_name, serial_no, is_thermal_camera FROM measurement_devices WHERE user_id = ? ORDER BY device_name ASC");
+$stmt_dev->execute([$_SESSION['user_id']]);
+$all_devices = $stmt_dev->fetchAll();
+
+$measuring_devices = [];
+$thermal_cameras = [];
+foreach ($all_devices as $d) {
+    if ($d['is_thermal_camera']) {
+        $thermal_cameras[] = $d;
+    } else {
+        $measuring_devices[] = $d;
+    }
+}
+
 include '../../includes/header.php';
 ?>
 
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">Tesis Bilgileri</h1>
+    <h1 class="h2">Kurum Bilgileri</h1>
 </div>
 
 <?php if ($success_msg): ?>
@@ -236,6 +281,42 @@ include '../../includes/header.php';
                     }
                     ?>
                     <input type="datetime-local" class="form-control" name="end_date" value="<?php echo $e_val; ?>">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-bold">Varsayılan Yetkili Kişi</label>
+                    <select class="form-select" name="default_authorized_person_id">
+                        <option value="">Seçiniz (Varsayılan Yok)</option>
+                        <?php foreach ($authorized_persons as $p): ?>
+                            <option value="<?php echo $p['id']; ?>" <?php echo ($info['default_authorized_person_id'] == $p['id']) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($p['adi_soyadi']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-bold">Varsayılan Ölçüm Cihazı</label>
+                    <select class="form-select" name="default_device_id">
+                        <option value="">Seçiniz (Varsayılan Yok)</option>
+                        <?php foreach ($measuring_devices as $d): ?>
+                            <option value="<?php echo $d['id']; ?>" <?php echo ($info['default_device_id'] == $d['id']) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($d['device_name'] . ' (' . $d['serial_no'] . ')'); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label fw-bold">Varsayılan Termal Cihaz</label>
+                    <select class="form-select" name="default_thermal_device_id">
+                        <option value="">Seçiniz (Varsayılan Yok)</option>
+                        <?php foreach ($thermal_cameras as $c): ?>
+                            <option value="<?php echo $c['id']; ?>" <?php echo ($info['default_thermal_device_id'] == $c['id']) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($c['device_name'] . ' (' . $c['serial_no'] . ')'); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
             </div>
 

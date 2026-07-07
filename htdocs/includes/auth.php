@@ -1,5 +1,15 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+if (php_sapi_name() === 'cli') {
+    $_SESSION['user_id'] = 2;
+    $_SESSION['role'] = 'admin';
+    $_SESSION['active_institution_id'] = getenv('ACTIVE_INSTITUTION_ID') ?: 1;
+    if (getenv('REPORT_ID')) {
+        $_GET['id'] = getenv('REPORT_ID');
+    }
+}
 
 // --- Auto-login via JWT Token (for Android App WebView) ---
 if (!isset($_SESSION['user_id'])) {

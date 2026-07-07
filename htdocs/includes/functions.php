@@ -123,4 +123,26 @@ function setSetting($pdo, $key, $value)
         return false;
     }
 }
+
+function getFacilityDefaults($pdo, $kurum_id)
+{
+    static $defaults = null;
+    if ($defaults === null) {
+        try {
+            $stmt = $pdo->prepare("SELECT default_authorized_person_id, default_device_id, default_thermal_device_id FROM facility_info WHERE kurum_id = ?");
+            $stmt->execute([$kurum_id]);
+            $defaults = $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            $defaults = null;
+        }
+        if (!$defaults) {
+            $defaults = [
+                'default_authorized_person_id' => null,
+                'default_device_id' => null,
+                'default_thermal_device_id' => null
+            ];
+        }
+    }
+    return $defaults;
+}
 ?>

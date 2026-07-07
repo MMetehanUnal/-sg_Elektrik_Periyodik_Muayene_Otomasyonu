@@ -15,7 +15,7 @@ if (isset($_GET['delete'])) {
 
 // Handle Add/Edit
 $editMode = false;
-$person = ['adi_soyadi' => '', 'meslegi' => '', 'kayit_no' => ''];
+$person = ['adi_soyadi' => '', 'meslegi' => '', 'kayit_no' => '', 'diploma_no' => '', 'oda_sicil_no' => ''];
 
 if (isset($_GET['edit'])) {
     $editMode = true;
@@ -31,13 +31,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $adi_soyadi = cleanInput($_POST['adi_soyadi']);
     $meslegi = cleanInput($_POST['meslegi']);
     $kayit_no = cleanInput($_POST['kayit_no']);
+    $diploma_no = cleanInput($_POST['diploma_no'] ?? '');
+    $oda_sicil_no = cleanInput($_POST['oda_sicil_no'] ?? '');
 
     if ($editMode) {
-        $stmt = $pdo->prepare("UPDATE authorized_persons SET adi_soyadi=?, meslegi=?, kayit_no=? WHERE id=?");
-        $stmt->execute([$adi_soyadi, $meslegi, $kayit_no, $_POST['id']]);
+        $stmt = $pdo->prepare("UPDATE authorized_persons SET adi_soyadi=?, meslegi=?, kayit_no=?, diploma_no=?, oda_sicil_no=? WHERE id=?");
+        $stmt->execute([$adi_soyadi, $meslegi, $kayit_no, $diploma_no, $oda_sicil_no, $_POST['id']]);
     } else {
-        $stmt = $pdo->prepare("INSERT INTO authorized_persons (adi_soyadi, meslegi, kayit_no) VALUES (?, ?, ?)");
-        $stmt->execute([$adi_soyadi, $meslegi, $kayit_no]);
+        $stmt = $pdo->prepare("INSERT INTO authorized_persons (adi_soyadi, meslegi, kayit_no, diploma_no, oda_sicil_no) VALUES (?, ?, ?, ?, ?)");
+        $stmt->execute([$adi_soyadi, $meslegi, $kayit_no, $diploma_no, $oda_sicil_no]);
     }
     redirect('yetkili_kisiler.php');
 }
@@ -73,9 +75,19 @@ include '../includes/header.php';
                             required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Kayıt Numarası</label>
+                        <label class="form-label">Kayıt Numarası (Bakanlık Sicil No)</label>
                         <input type="text" class="form-control" name="kayit_no"
-                            value="<?php echo $person['kayit_no']; ?>">
+                            value="<?php echo $person['kayit_no'] ?? ''; ?>">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Diploma No</label>
+                        <input type="text" class="form-control" name="diploma_no"
+                            value="<?php echo $person['diploma_no'] ?? ''; ?>">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Oda Sicil No</label>
+                        <input type="text" class="form-control" name="oda_sicil_no"
+                            value="<?php echo $person['oda_sicil_no'] ?? ''; ?>">
                     </div>
 
                     <button type="submit" class="btn btn-primary w-100">
@@ -101,6 +113,8 @@ include '../includes/header.php';
                                 <th>Adı Soyadı</th>
                                 <th>Mesleği</th>
                                 <th>Kayıt No</th>
+                                <th>Diploma No</th>
+                                <th>Oda Sicil No</th>
                                 <th>İşlemler</th>
                             </tr>
                         </thead>
@@ -117,14 +131,27 @@ include '../includes/header.php';
                                         <?php echo htmlspecialchars($row['meslegi']); ?>
                                     </td>
                                     <td>
-                                        <?php echo htmlspecialchars($row['kayit_no']); ?>
+                                        <?php echo htmlspecialchars($row['kayit_no'] ?? '-'); ?>
                                     </td>
                                     <td>
-                                        <a href="?edit=<?php echo $row['id']; ?>" class="btn btn-sm btn-warning"><i
-                                                class="fas fa-edit"></i></a>
-                                        <a href="?delete=<?php echo $row['id']; ?>" class="btn btn-sm btn-danger"
-                                            onclick="return confirm('Silmek istediğinize emin misiniz?')"><i
-                                                class="fas fa-trash"></i></a>
+                                        <?php echo htmlspecialchars($row['diploma_no'] ?? '-'); ?>
+                                    </td>
+                                    <td>
+                                        <?php echo htmlspecialchars($row['oda_sicil_no'] ?? '-'); ?>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="yetkili_belgeleri.php?person_id=<?php echo $row['id']; ?>" class="btn btn-sm btn-primary text-white" style="background-color: #4361EE; border-color: #4361EE;" title="Yetki Belgeleri">
+                                                <i class="fas fa-file-contract me-1"></i> Yetki Belgeleri
+                                            </a>
+                                            <a href="?edit=<?php echo $row['id']; ?>" class="btn btn-sm btn-warning" title="Düzenle">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="?delete=<?php echo $row['id']; ?>" class="btn btn-sm btn-danger" title="Sil"
+                                                onclick="return confirm('Silmek istediğinize emin misiniz?')">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                             <?php endwhile; ?>

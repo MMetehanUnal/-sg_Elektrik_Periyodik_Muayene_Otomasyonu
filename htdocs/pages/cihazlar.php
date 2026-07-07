@@ -142,9 +142,18 @@ include '../includes/header.php';
                                     <?php echo $row['is_thermal_camera'] ? '<span class="badge bg-warning text-dark">Termal</span>' : 'Ölçüm'; ?>
                                 </td>
                                 <td>
-                                    <a href="cihazlar.php?edit=<?php echo $row['id']; ?>" class="btn btn-sm btn-warning">Düzenle</a>
-                                    <a href="cihazlar.php?delete=<?php echo $row['id']; ?>" class="btn btn-sm btn-danger"
-                                        onclick="return confirm('Silmek istediğinize emin misiniz?')">Sil</a>
+                                    <div class="btn-group">
+                                        <a href="cihaz_kalibrasyon_belgeleri.php?device_id=<?php echo $row['id']; ?>" class="btn btn-sm btn-primary text-white" style="background-color: #4361EE; border-color: #4361EE;" title="Kalibrasyon Belgeleri">
+                                            <i class="fas fa-file-contract me-1"></i> Kalibrasyon Belgeleri
+                                        </a>
+                                        <a href="cihazlar.php?edit=<?php echo $row['id']; ?>" class="btn btn-sm btn-warning" title="Düzenle">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="cihazlar.php?delete=<?php echo $row['id']; ?>" class="btn btn-sm btn-danger" title="Sil"
+                                            onclick="return confirm('Silmek istediğinize emin misiniz?')">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endwhile; ?>

@@ -5,6 +5,17 @@ require_once '../includes/auth.php';
 
 requireLogin();
 
+// Auto-create company_documents database table if not exists
+$pdo->exec("
+    CREATE TABLE IF NOT EXISTS company_documents (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        filename VARCHAR(255) NOT NULL,
+        file_size INT NOT NULL,
+        uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+");
+
 $success_msg = '';
 $error_msg = '';
 
@@ -105,6 +116,69 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         } else {
             $error_msg = 'Silinecek logo bulunamadı.';
         }
+    } 
+    elseif ($action === 'upload_company_doc') {
+        $title = cleanInput($_POST['title'] ?? '');
+        if (empty($title)) {
+            $error_msg = 'Lütfen belge başlığı giriniz.';
+        } elseif (!isset($_FILES['document']) || $_FILES['document']['error'] !== UPLOAD_ERR_OK) {
+            $error_msg = 'Dosya seçilirken veya yüklenirken bir hata oluştu.';
+        } else {
+            $file = $_FILES['document'];
+            $original_name = $file['name'];
+            $file_size = $file['size'];
+            $file_tmp = $file['tmp_name'];
+            
+            $allowed_extensions = ['pdf', 'doc', 'docx', 'png', 'jpg', 'jpeg', 'xls', 'xlsx'];
+            $file_ext = strtolower(pathinfo($original_name, PATHINFO_EXTENSION));
+            $max_file_size = 20 * 1024 * 1024; // 20 MB
+            
+            if (!in_array($file_ext, $allowed_extensions)) {
+                $error_msg = 'İzin verilmeyen dosya formatı. İzin verilen uzantılar: ' . implode(', ', $allowed_extensions);
+            } elseif ($file_size > $max_file_size) {
+                $error_msg = 'Dosya boyutu çok büyük. Maksimum 20 MB yükleyebilirsiniz.';
+            } else {
+                $new_filename = 'company_doc_' . time() . '_' . rand(1000, 9999) . '.' . $file_ext;
+                $upload_dir = '../uploads/firma_belgeler/';
+                
+                if (!file_exists($upload_dir)) {
+                    mkdir($upload_dir, 0777, true);
+                }
+                
+                if (move_uploaded_file($file_tmp, $upload_dir . $new_filename)) {
+                    $stmt_ins = $pdo->prepare("INSERT INTO company_documents (title, filename, file_size) VALUES (?, ?, ?)");
+                    if ($stmt_ins->execute([$title, $new_filename, $file_size])) {
+                        $success_msg = 'Şirket belgesi başarıyla yüklendi.';
+                    } else {
+                        $error_msg = 'Belge veritabanına kaydedilemedi.';
+                    }
+                } else {
+                    $error_msg = 'Dosya sunucuya taşınırken bir hata oluştu.';
+                }
+            }
+        }
+    }
+    elseif ($action === 'delete_company_doc') {
+        $doc_id = (int)($_POST['doc_id'] ?? 0);
+        $stmt_doc = $pdo->prepare("SELECT filename FROM company_documents WHERE id = ?");
+        $stmt_doc->execute([$doc_id]);
+        $filename = $stmt_doc->fetchColumn();
+        
+        if ($filename) {
+            $file_path = "../uploads/firma_belgeler/" . $filename;
+            if (file_exists($file_path)) {
+                unlink($file_path);
+            }
+            
+            $stmt_del = $pdo->prepare("DELETE FROM company_documents WHERE id = ?");
+            if ($stmt_del->execute([$doc_id])) {
+                $success_msg = 'Şirket belgesi kalıcı olarak silindi.';
+            } else {
+                $error_msg = 'Belge veritabanından silinemedi.';
+            }
+        } else {
+            $error_msg = 'Silinecek belge bulunamadı.';
+        }
     }
 }
 
@@ -116,6 +190,10 @@ $current_active_logo = getSetting($pdo, 'active_logo', '');
 // Fetch uploaded logos
 $stmt_logos = $pdo->query("SELECT * FROM uploaded_logos ORDER BY id DESC");
 $uploaded_logos = $stmt_logos->fetchAll();
+
+// Fetch company documents
+$stmt_company_docs = $pdo->query("SELECT * FROM company_documents ORDER BY uploaded_at DESC");
+$company_documents = $stmt_company_docs->fetchAll();
 
 include '../includes/header.php';
 ?>
@@ -272,6 +350,106 @@ include '../includes/header.php';
                         <?php endforeach; ?>
                     </div>
                 <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Row for Inspecting Company Documents -->
+<div class="row mt-4">
+    <div class="col-12 mb-4">
+        <div class="card shadow-sm border-0 rounded-3">
+            <div class="card-header bg-dark text-white py-3">
+                <h5 class="card-title mb-0 fw-semibold"><i class="fas fa-file-signature me-2"></i> Kontrolü Yapan Şirket Yetki Belgeleri</h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="row">
+                    <!-- Upload Column -->
+                    <div class="col-md-4 mb-4 mb-md-0 border-end">
+                        <h6 class="fw-bold text-secondary mb-3"><i class="fas fa-upload me-1 text-primary"></i> Yeni Şirket Belgesi Yükle</h6>
+                        <form method="POST" action="" enctype="multipart/form-data">
+                            <input type="hidden" name="action" value="upload_company_doc">
+                            
+                            <div class="mb-3">
+                                <label for="doc_title" class="form-label small fw-bold text-muted">Belge Başlığı</label>
+                                <input type="text" class="form-control form-control-sm" id="doc_title" name="title" placeholder="Örn: OSGB Yetki Belgesi, ISO 9001" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="doc_file" class="form-label small fw-bold text-muted">Dosya Seçin</label>
+                                <input type="file" class="form-control form-control-sm" id="doc_file" name="document" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.xls,.xlsx" required>
+                                <div class="form-text text-muted small mt-1">PDF, Word, Excel veya Resim (Max: 20MB).</div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-sm btn-primary w-100 py-2 fw-semibold">
+                                <i class="fas fa-cloud-upload-alt me-1"></i> Belgeyi Yükle
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <!-- Listing Column -->
+                    <div class="col-md-8 px-md-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="fw-bold text-secondary mb-0"><i class="fas fa-folder me-1 text-warning"></i> Şirket Belgeleri Listesi</h6>
+                            <span class="badge bg-secondary"><?php echo count($company_documents); ?> Belge</span>
+                        </div>
+                        
+                        <?php if (empty($company_documents)): ?>
+                            <div class="text-center py-5 bg-light rounded-3">
+                                <i class="fas fa-file-invoice fa-3x text-muted mb-3 opacity-50"></i>
+                                <p class="text-muted mb-0 small">Sistemde kayıtlı şirket yetki belgesi bulunmamaktadır.</p>
+                            </div>
+                        <?php else: ?>
+                            <div class="table-responsive" style="max-height: 350px;">
+                                <table class="table table-hover table-striped align-middle mb-0">
+                                    <thead>
+                                        <tr class="table-light">
+                                            <th>Belge Başlığı</th>
+                                            <th>Boyut</th>
+                                            <th>Yüklenme Tarihi</th>
+                                            <th class="text-end">İşlemler</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($company_documents as $doc): ?>
+                                            <tr>
+                                                <td>
+                                                    <div class="d-flex align-items-center">
+                                                        <i class="fas fa-file-alt text-primary fa-lg me-2"></i>
+                                                        <span class="fw-semibold text-dark"><?php echo htmlspecialchars($doc['title']); ?></span>
+                                                    </div>
+                                                </td>
+                                                <td class="small"><?php 
+                                                    $size = $doc['file_size'];
+                                                    if ($size >= 1048576) {
+                                                        echo number_format($size / 1048576, 2) . ' MB';
+                                                    } else {
+                                                        echo number_format($size / 1024, 2) . ' KB';
+                                                    }
+                                                ?></td>
+                                                <td class="small text-muted"><?php echo date('d.m.Y H:i', strtotime($doc['uploaded_at'])); ?></td>
+                                                <td class="text-end">
+                                                    <div class="btn-group">
+                                                        <a href="../uploads/firma_belgeler/<?php echo htmlspecialchars($doc['filename']); ?>" target="_blank" class="btn btn-sm btn-outline-dark">
+                                                            <i class="fas fa-eye me-1"></i> Görüntüle
+                                                        </a>
+                                                        <form method="POST" action="" class="d-inline" onsubmit="return confirm('Bu belgeyi silmek istediğinizden emin misiniz?')">
+                                                            <input type="hidden" name="action" value="delete_company_doc">
+                                                            <input type="hidden" name="doc_id" value="<?php echo $doc['id']; ?>">
+                                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                                <i class="fas fa-trash"></i>
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

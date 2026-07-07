@@ -16,6 +16,7 @@ if (!isset($_SESSION['active_institution_id'])) {
 }
 
 $kurum_id = $_SESSION['active_institution_id'];
+$facility_defaults = getFacilityDefaults($pdo, $kurum_id);
 $firma_adi_eki = isset($_GET['firma_adi_eki']) ? trim($_GET['firma_adi_eki']) : '';
 
 if (empty($firma_adi_eki)) {

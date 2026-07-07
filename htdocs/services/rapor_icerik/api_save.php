@@ -35,6 +35,20 @@ $reportId = isset($data['report_id']) ? intval($data['report_id']) : null;
 $title    = isset($data['title']) ? trim($data['title']) : '';
 $content  = isset($data['content']) ? $data['content'] : '';
 
+$yurt_yoneticisi = isset($data['yurt_yoneticisi']) ? trim($data['yurt_yoneticisi']) : null;
+$yatak_kapasitesi = isset($data['yatak_kapasitesi']) ? trim($data['yatak_kapasitesi']) : null;
+$is_guvenligi_uzmani = isset($data['is_guvenligi_uzmani']) ? trim($data['is_guvenligi_uzmani']) : null;
+$ada = isset($data['ada']) ? trim($data['ada']) : null;
+$pafta = isset($data['pafta']) ? trim($data['pafta']) : null;
+$parsel = isset($data['parsel']) ? trim($data['parsel']) : null;
+$phone = isset($data['phone']) ? trim($data['phone']) : null;
+$report_no = isset($data['report_no']) ? trim($data['report_no']) : null;
+$report_date = !empty($data['report_date']) ? $data['report_date'] : null;
+$control_date = !empty($data['control_date']) ? $data['control_date'] : null;
+$next_control_date = !empty($data['next_control_date']) ? $data['next_control_date'] : null;
+$mekanik_uzman_id = !empty($data['mekanik_uzman_id']) ? intval($data['mekanik_uzman_id']) : null;
+$elektrik_uzman_id = !empty($data['elektrik_uzman_id']) ? intval($data['elektrik_uzman_id']) : null;
+
 // Title is required
 if (empty($title)) {
     http_response_code(400);
@@ -54,8 +68,20 @@ try {
             exit;
         }
 
-        $stmt = $pdo->prepare("UPDATE general_reports SET title = ?, content = ?, updated_at = NOW() WHERE id = ? AND kurum_id = ?");
-        $stmt->execute([$title, $content, $reportId, $kurumId]);
+        $stmt = $pdo->prepare("UPDATE general_reports SET 
+            title = ?, content = ?, yurt_yoneticisi = ?, yatak_kapasitesi = ?, 
+            is_guvenligi_uzmani = ?, ada = ?, pafta = ?, parsel = ?, 
+            phone = ?, report_no = ?, report_date = ?, control_date = ?, 
+            next_control_date = ?, mekanik_uzman_id = ?, elektrik_uzman_id = ?, 
+            updated_at = NOW() 
+            WHERE id = ? AND kurum_id = ?");
+        $stmt->execute([
+            $title, $content, $yurt_yoneticisi, $yatak_kapasitesi,
+            $is_guvenligi_uzmani, $ada, $pafta, $parsel,
+            $phone, $report_no, $report_date, $control_date,
+            $next_control_date, $mekanik_uzman_id, $elektrik_uzman_id,
+            $reportId, $kurumId
+        ]);
 
         echo json_encode([
             'success'   => true,
@@ -64,8 +90,19 @@ try {
 
     } else {
         // INSERT new report
-        $stmt = $pdo->prepare("INSERT INTO general_reports (kurum_id, title, content, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())");
-        $stmt->execute([$kurumId, $title, $content]);
+        $stmt = $pdo->prepare("INSERT INTO general_reports 
+            (kurum_id, title, content, yurt_yoneticisi, yatak_kapasitesi, 
+            is_guvenligi_uzmani, ada, pafta, parsel, 
+            phone, report_no, report_date, control_date, 
+            next_control_date, mekanik_uzman_id, elektrik_uzman_id, 
+            created_at, updated_at) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())");
+        $stmt->execute([
+            $kurumId, $title, $content, $yurt_yoneticisi, $yatak_kapasitesi,
+            $is_guvenligi_uzmani, $ada, $pafta, $parsel,
+            $phone, $report_no, $report_date, $control_date,
+            $next_control_date, $mekanik_uzman_id, $elektrik_uzman_id
+        ]);
 
         $newId = (int) $pdo->lastInsertId();
 
