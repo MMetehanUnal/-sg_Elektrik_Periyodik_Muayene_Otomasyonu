@@ -82,7 +82,8 @@ $url_map = [
     'engelli_rampasi' => 'engelli_rampasi_yazdir.php',
     'boyler_tanki' => 'boyler_tanki_yazdir.php',
     'jenarator' => 'jenarator_yazdir.php',
-    'kamera_bakim' => 'kamera_bakim_yazdir.php'
+    'kamera_bakim' => 'kamera_bakim_yazdir.php',
+    'yangin_tesisat' => 'yangin_tesisat_yazdir.php'
 ];
 
 // Fetch and prepare pages using PHP CLI proc_open to prevent built-in server deadlock

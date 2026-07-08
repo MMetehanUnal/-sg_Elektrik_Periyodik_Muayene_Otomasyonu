@@ -557,7 +557,7 @@ function renderHeader()
                                 Tesisatı</b>
                             muayenesi sonrasında mevcut şartlar altında <b>kullanımı 1 yıl süreyle;</b><br>
                             <div style="margin: 5px 0; font-size: 14px; font-weight: bold;">
-                                <?php if (isset($data['result']) && $data['result'] == 'UYGUNDUR'): ?>
+                                <?php if (isset($data['result']) && ($data['result'] == 'UYGUNDUR' || $data['result'] == 'GÜVENLİDİR')): ?>
                                     KULLANIMI UYGUNDUR
                                 <?php else: ?>
                                     KULLANIMI UYGUN DEĞİLDİR

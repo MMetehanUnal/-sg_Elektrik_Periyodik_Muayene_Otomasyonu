@@ -154,6 +154,11 @@
                                             </a>
                                         </li>
                                         <li class="nav-item">
+                                            <a class="nav-link side-link-sub" href="/pages/forms/yangin_tesisat_kontrol.php">
+                                                Yangın Tesisatı
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
                                             <a class="nav-link side-link-sub" href="/pages/forms/sihhi_tesisat_kontrol.php">
                                                 Sıhhi Tesisat
                                             </a>
@@ -227,6 +232,12 @@
                                             <a class="nav-link side-link-sub"
                                                 href="/pages/results/yangin_algilama_sonuclar.php">
                                                 Yangın Algılama
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link side-link-sub"
+                                                href="/pages/results/yangin_tesisat_sonuclar.php">
+                                                Yangın Tesisatı
                                             </a>
                                         </li>
                                         <li class="nav-item">

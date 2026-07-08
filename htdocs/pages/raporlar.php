@@ -72,9 +72,11 @@ include '../includes/header.php';
                         (SELECT id, report_no COLLATE utf8mb4_general_ci as report_no, report_date, control_reason COLLATE utf8mb4_general_ci as control_reason, result COLLATE utf8mb4_general_ci as result, authorized_person_id, 'jenarator' as type, firma_adi_eki COLLATE utf8mb4_general_ci as firma_adi_eki FROM jenarator_reports WHERE kurum_id = ?)
                         UNION ALL
                         (SELECT id, report_no COLLATE utf8mb4_general_ci as report_no, report_date, control_reason COLLATE utf8mb4_general_ci as control_reason, result COLLATE utf8mb4_general_ci as result, authorized_person_id, 'kamera_bakim' as type, firma_adi_eki COLLATE utf8mb4_general_ci as firma_adi_eki FROM kamera_bakim_reports WHERE kurum_id = ?)
+                        UNION ALL
+                        (SELECT id, report_no COLLATE utf8mb4_general_ci as report_no, report_date, control_reason COLLATE utf8mb4_general_ci as control_reason, result COLLATE utf8mb4_general_ci as result, authorized_person_id, 'yangin_tesisat' as type, firma_adi_eki COLLATE utf8mb4_general_ci as firma_adi_eki FROM yangin_tesisat_reports WHERE kurum_id = ?)
                         ORDER BY report_date DESC
                     ");
-                    $stmt->execute([$kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id]);
+                    $stmt->execute([$kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id]);
                     while ($row = $stmt->fetch()):
                         $stmt_ap = $pdo->prepare("SELECT adi_soyadi FROM authorized_persons WHERE id = ?");
                         $stmt_ap->execute([$row['authorized_person_id']]);
@@ -97,6 +99,7 @@ include '../includes/header.php';
                                 elseif ($row['type'] == 'boyler_tanki') echo 'Boyler Tankı';
                                 elseif ($row['type'] == 'jenarator') echo 'Jeneratör';
                                 elseif ($row['type'] == 'kamera_bakim') echo 'Kamera Bakım';
+                                elseif ($row['type'] == 'yangin_tesisat') echo 'Yangın Tesisatı';
                                 else echo 'Yangın Algılama';
                             ?>">
                                 <?php echo htmlspecialchars($row['report_no']); ?>
@@ -124,6 +127,8 @@ include '../includes/header.php';
                                         echo 'Jeneratör';
                                     elseif ($row['type'] == 'kamera_bakim')
                                         echo 'Kamera Bakım';
+                                    elseif ($row['type'] == 'yangin_tesisat')
+                                        echo 'Yangın Tesisatı';
                                     else
                                         echo 'Yangın Algılama';
                                     ?>
@@ -293,7 +298,7 @@ include '../includes/header.php';
                                             class="btn btn-sm btn-outline-secondary" title="Sonuçları Düzenle">
                                             <i class="fas fa-table"></i>
                                         </a>
-                                    <?php else: ?>
+                                    <?php elseif ($row['type'] == 'yangin'): ?>
                                         <a href="yangin_algilama_yazdir.php?id=<?php echo $row['id']; ?>" target="_blank"
                                             class="btn btn-sm btn-outline-dark" title="Yazdır/Görüntüle">
                                             <i class="fas fa-print"></i>
@@ -305,6 +310,19 @@ include '../includes/header.php';
                                         <a href="results/yangin_algilama_sonuclar.php?report_id=<?php echo $row['id']; ?>"
                                             class="btn btn-sm btn-outline-secondary" title="Sonuçları Düzenle">
                                             <i class="fas fa-list-check"></i>
+                                        </a>
+                                    <?php else: ?>
+                                        <a href="yangin_tesisat_yazdir.php?id=<?php echo $row['id']; ?>" target="_blank"
+                                            class="btn btn-sm btn-outline-dark" title="Yazdır/Görüntüle">
+                                            <i class="fas fa-print"></i>
+                                        </a>
+                                        <a href="forms/yangin_tesisat_kontrol.php?id=<?php echo $row['id']; ?>"
+                                            class="btn btn-sm btn-outline-primary" title="Raporu Düzenle">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="results/yangin_tesisat_sonuclar.php?report_id=<?php echo $row['id']; ?>"
+                                            class="btn btn-sm btn-outline-secondary" title="Sonuçları Düzenle">
+                                            <i class="fas fa-table"></i>
                                         </a>
                                     <?php endif; ?>
                                 </div>

@@ -622,7 +622,7 @@ function renderHeader()
                         <div style="border: 1px solid black; padding: 10px; line-height: 1.4;">
                             <p>Periyodik kontrol tarihi itibari ile yukarıda teknik özellikleri belirtilen Yıldırımdan
                                 Korunma Tesisatı muayenesi sonrasında mevcut şartlar altında <strong>kullanımı
-                                    <?php echo ($data['result'] == 'UYGUNDUR') ? 'uygundur' : 'uygun değildir'; ?>.</strong>
+                                    <?php echo ($data['result'] == 'UYGUNDUR' || $data['result'] == 'GÜVENLİDİR') ? 'uygundur' : 'uygun değildir'; ?>.</strong>
                             </p>
 
                             <p><strong>Ağır kusurlar tanımı:</strong><br>

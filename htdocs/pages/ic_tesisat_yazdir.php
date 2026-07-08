@@ -981,7 +981,7 @@ function renderHeader()
         <p>Periyodik kontrol tarihi itibari ile yukarıda teknik özellikleri belirtilen Elektrik
             Tesisatının fonksiyon testleri muayenesi sonrasında mevcut şartlar altında
             <strong>kullanımı
-                <?php echo ($data['result'] == 'UYGUNDUR') ? 'uygundur' : 'uygun değildir'; ?>.</strong>
+                <?php echo ($data['result'] == 'UYGUNDUR' || $data['result'] == 'GÜVENLİDİR') ? 'uygundur' : 'uygun değildir'; ?>.</strong>
             TS HD 60364 standardına göre kullanımı uygun olmayan tesisatlar aşağıdaki şekilde
             işaretlenir:<br>
             Tespit edilen hafif kusurların bir sonraki periyodik kontrol tarihine kadar giderilmesi

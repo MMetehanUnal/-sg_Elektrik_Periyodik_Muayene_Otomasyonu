@@ -33,9 +33,9 @@ include '../includes/header.php';
         <div class="card text-white bg-success mb-3">
             <div class="card-header">Aktif Oturum</div>
             <div class="card-body">
-                <h5 class="card-title">Seçili Tesis</h5>
+                <h5 class="card-title">Seçili Kurum</h5>
                 <p class="card-text">
-                    <?php echo isset($_SESSION['active_institution_name']) ? $_SESSION['active_institution_name'] : 'Tesis Seçilmedi'; ?>
+                    <?php echo isset($_SESSION['active_institution_name']) ? $_SESSION['active_institution_name'] : 'Kurum Seçilmedi'; ?>
                 </p>
                 <a href="tesis_secimi.php" class="btn btn-light btn-sm">Değiştir</a>
             </div>

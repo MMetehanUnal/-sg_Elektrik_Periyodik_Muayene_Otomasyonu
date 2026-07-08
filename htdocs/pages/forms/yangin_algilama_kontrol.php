@@ -745,10 +745,9 @@ include '../../includes/header.php';
             <div id="c8" class="accordion-collapse collapse" data-bs-parent="#accordionForm">
                 <div class="accordion-body">
                     <div class="mb-3 border p-3 bg-light">
-                        <label class="form-label fw-bold">Genel Sonuç</label>
                         <select class="form-select" name="result">
-                            <option value="UYGUNDUR" <?php echo ($report['result'] ?? '') == 'UYGUNDUR' ? 'selected' : ''; ?>>UYGUNDUR</option>
-                            <option value="UYGUN DEGILDIR" <?php echo ($report['result'] ?? '') == 'UYGUN DEGILDIR' ? 'selected' : ''; ?>>UYGUN DEĞİLDİR</option>
+                            <option value="UYGUNDUR" <?php echo (($report['result'] ?? '') == 'UYGUNDUR' || ($report['result'] ?? '') == 'GÜVENLİDİR') ? 'selected' : ''; ?>>UYGUNDUR</option>
+                            <option value="UYGUN DEGILDIR" <?php echo (($report['result'] ?? '') == 'UYGUN DEGILDIR' || ($report['result'] ?? '') == 'UYGUN DEĞİLDİR' || ($report['result'] ?? '') == 'GÜVENLİ DEĞİLDİR') ? 'selected' : ''; ?>>UYGUN DEĞİLDİR</option>
                         </select>
                     </div>
                 </div>

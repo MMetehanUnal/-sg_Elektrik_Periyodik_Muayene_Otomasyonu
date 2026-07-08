@@ -106,7 +106,7 @@ include '../includes/header.php';
                             <?php echo $editMode ? 'Sözleşme PDF\'ini Güncelle' : 'Sözleşme PDF\'inden Doldur'; ?>
                         </label>
                         <input type="file" class="form-control form-control-sm" id="contract_pdf_loader" accept=".pdf">
-                        <div class="form-text small">Sözleşme başlangıç tarihi ve il plaka kodunu otomatik doldurmak için PDF seçin.</div>
+                        <div class="form-text small">Bilgileri otomatik olarak doldurmak için PDF seçin.</div>
                         <div id="pdf_status_message" class="small mt-2 font-weight-bold" style="display:none;"></div>
                     </div>
 
@@ -295,6 +295,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     if (data.city_code) {
                         document.querySelector('input[name="il_kodu"]').value = data.city_code;
+                    }
+                    
+                    if (data.firma_adi) {
+                        document.querySelector('input[name="firma_adi"]').value = data.firma_adi;
+                    }
+                    if (data.adres) {
+                        document.querySelector('textarea[name="adresi"]').value = data.adres;
+                    }
+                    if (data.sgk_no) {
+                        document.querySelector('input[name="sgk_sicil_no"]').value = data.sgk_no;
+                    }
+                    if (data.isg_katip_id) {
+                        document.querySelector('input[name="isg_katip_id"]').value = data.isg_katip_id;
                     }
                 }
             })

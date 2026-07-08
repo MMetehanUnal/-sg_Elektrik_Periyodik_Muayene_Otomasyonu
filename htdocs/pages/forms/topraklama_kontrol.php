@@ -567,8 +567,8 @@ include '../../includes/header.php';
 
                         <select class="form-select mb-3" name="result">
                             <?php $sel = $report['result'] ?? ''; ?>
-                            <option value="UYGUNDUR" <?php echo $sel == 'UYGUNDUR' ? 'selected' : ''; ?>>UYGUNDUR</option>
-                            <option value="UYGUN DEGILDIR" <?php echo $sel == 'UYGUN DEGILDIR' ? 'selected' : ''; ?>>UYGUN
+                            <option value="UYGUNDUR" <?php echo ($sel == 'UYGUNDUR' || $sel == 'GÜVENLİDİR') ? 'selected' : ''; ?>>UYGUNDUR</option>
+                            <option value="UYGUN DEGILDIR" <?php echo ($sel == 'UYGUN DEGILDIR' || $sel == 'UYGUN DEĞİLDİR' || $sel == 'GÜVENLİ DEĞİLDİR') ? 'selected' : ''; ?>>UYGUN
                                 DEĞİLDİR</option>
                         </select>
 

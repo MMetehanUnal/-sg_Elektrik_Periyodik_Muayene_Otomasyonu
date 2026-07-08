@@ -766,8 +766,8 @@ include '../../includes/header.php';
                     <div class="mb-3">
                         <label class="form-label fw-bold">Genel Sonuç Değerlendirmesi</label>
                         <select class="form-select" name="result">
-                            <option value="UYGUNDUR" <?php echo ($report['result'] ?? '') == 'UYGUNDUR' ? 'selected' : ''; ?>>Kullanımı UYGUNDUR</option>
-                            <option value="UYGUN DEGILDIR" <?php echo ($report['result'] ?? '') == 'UYGUN DEGILDIR' ? 'selected' : ''; ?>>Kullanımı UYGUN DEĞİLDİR</option>
+                            <option value="UYGUNDUR" <?php echo ($report['result'] ?? '') == 'UYGUNDUR' || ($report['result'] ?? '') == 'GÜVENLİDİR' ? 'selected' : ''; ?>>Kullanımı UYGUNDUR</option>
+                            <option value="UYGUN DEGILDIR" <?php echo ($report['result'] ?? '') == 'UYGUN DEGILDIR' || ($report['result'] ?? '') == 'UYGUN DEĞİLDİR' || ($report['result'] ?? '') == 'GÜVENLİ DEĞİLDİR' ? 'selected' : ''; ?>>Kullanımı UYGUN DEĞİLDİR</option>
                         </select>
                         <small class="text-muted d-block mt-2">Bu seçim rapor çıktısındaki "Sonuç ve Kanaat" metnini
                             (ağır kusur tanımları dahil) otomatik olarak güncelleyecektir.</small>

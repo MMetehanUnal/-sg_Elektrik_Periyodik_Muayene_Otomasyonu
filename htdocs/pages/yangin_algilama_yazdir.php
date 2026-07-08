@@ -555,7 +555,7 @@ function renderHeader()
                             <p>Periyodik kontrol tarihi itibariyle yukarıda teknik özellikleri belirtilen Yangın
                                 Algılama ve Uyarı Sisteminin periyodik muayenesi sonrasında mevcut şartlar altında
                                 kullanımı 1 yıl süreyle; <br>
-                                <strong><?php echo ($data['result'] == 'UYGUNDUR') ? 'UYGUNDUR' : 'UYGUN DEĞİLDİR'; ?></strong>
+                                <strong><?php echo ($data['result'] == 'UYGUNDUR' || $data['result'] == 'GÜVENLİDİR') ? 'UYGUNDUR' : 'UYGUN DEĞİLDİR'; ?></strong>
                             </p>
 
                             <p>Tespit edilen hafif kusurların bir sonraki periyodik kontrol tarihine kadar

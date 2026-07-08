@@ -48,50 +48,107 @@ def main():
             "KİLİS": "79", "OSMANİYE": "80", "DÜZCE": "81"
         }
 
-        # Date extract
+        lines = [line.strip() for line in text.split('\n')]
+        
+        # Clean parser variables
         start_date = None
-        date_patterns = [
-            r"BAŞLANGIÇ\s*TARİH[İI]\s*:\s*(\d{2}[./-]\d{2}[./-]\d{4})",
-            r"SÖZLEŞME\s*TARİH[İI]\s*:\s*(\d{2}[./-]\d{2}[./-]\d{4})",
-            r"TARİH[İI]\s*:\s*(\d{2}[./-]\d{2}[./-]\d{4})"
-        ]
+        city_code = "01"
+        city_name = None
+        firma_adi = None
+        adres = None
+        sgk_no = None
+        isg_katip_id = None
         
-        for pat in date_patterns:
-            m = re.search(pat, text_upper)
-            if m:
-                # Convert DD.MM.YYYY to YYYY-MM-DD for PHP / MySQL input
-                raw_d = m.group(1).replace('.', '-').replace('/', '-')
-                parts = raw_d.split('-')
-                if len(parts) == 3:
-                    start_date = f"{parts[2]}-{parts[1]}-{parts[0]}"
-                break
+        # 1. Extract dates and contract ID
+        for i, line in enumerate(lines):
+            line_upper = tr_upper(line)
+            
+            # Contract ID
+            if "SÖZLEŞME ID" in line_upper:
+                for j in range(1, 10):
+                    if i + j < len(lines):
+                        potential_id = re.sub(r'\s+', '', lines[i + j])
+                        if re.match(r'^\d{8}$', potential_id):
+                            isg_katip_id = potential_id
+                            break
+                            
+            # Start date
+            if "BAŞLANGIÇ" in line_upper or "BAŞLANGIC" in line_upper:
+                m_date = re.search(r"(\d{2})[./-](\d{2})[./-](\d{4})", line)
+                if m_date:
+                    start_date = f"{m_date.group(3)}-{m_date.group(2)}-{m_date.group(1)}"
+                else:
+                    for j in range(-2, 3):
+                        if 0 <= i + j < len(lines):
+                            m_date = re.search(r"(\d{2})[./-](\d{2})[./-](\d{4})", lines[i + j])
+                            if m_date:
+                                start_date = f"{m_date.group(3)}-{m_date.group(2)}-{m_date.group(1)}"
+                                break
         
+        # Fallback for start date if not found
         if not start_date:
-            # Fallback to any date in document
             m = re.findall(r"(\d{2})[./-](\d{2})[./-](\d{4})", text)
             if m:
                 start_date = f"{m[0][2]}-{m[0][1]}-{m[0][0]}"
-
-        # City extract
-        city_code = "01"
-        city_name = None
-        
-        city_patterns = [
-            r"İL[İI]?\s*:\s*([A-ZÇŞĞÜÖİ]+)",
-            r"İL[İI]?\s*/\s*İLÇE[İI]?\s*:\s*([A-ZÇŞĞÜÖİ]+)"
-        ]
-        for pat in city_patterns:
-            m = re.search(pat, text_upper)
-            if m:
-                possible_city = m.group(1).strip()
-                if possible_city in PLATE_CODES:
-                    city_name = possible_city
-                    city_code = PLATE_CODES[possible_city]
-                    break
-        
+                
+        # 2. Extract Business Info
+        for i, line in enumerate(lines):
+            line_upper = tr_upper(line)
+            
+            if "HİZMET ALAN İŞYERİ" in line_upper or "HIZMET ALAN ISYERI" in line_upper:
+                for j in range(1, 15):
+                    if i + j < len(lines):
+                        l = lines[i + j]
+                        l_upper = tr_upper(l)
+                        
+                        # Adres
+                        if "ADRES" in l_upper:
+                            m_adr = re.search(r"ADRES\s*:?\s*(.*)", l, re.IGNORECASE)
+                            if m_adr:
+                                val = m_adr.group(1).strip()
+                                if val.startswith(":"):
+                                    val = val[1:].strip()
+                                adres = val
+                                
+                        # SGK No
+                        clean_l = re.sub(r'\s+', '', l)
+                        if re.match(r'^\d{20,30}$', clean_l):
+                            sgk_no = clean_l
+                            
+                        # Unvan / Firma Adı
+                        if "UNVAN" in l_upper:
+                            for k in range(1, 12):
+                                if i + j + k < len(lines):
+                                    candidate = lines[i + j + k].strip()
+                                    if candidate.startswith(":"):
+                                        candidate_val = candidate[1:].strip()
+                                        candidate_upper = tr_upper(candidate_val)
+                                        
+                                        if "ADRES" in candidate_upper:
+                                            continue
+                                        if "İL" in candidate_upper and not "BİRLİĞİ" in candidate_upper and not "MİLLİ" in candidate_upper:
+                                            continue
+                                        if len(candidate_val) < 5:
+                                            continue
+                                            
+                                        firma_adi = candidate_val
+                                        break
+                                        
+        # City Mapping (using existing PLATE_CODES logic)
+        for line in lines:
+            line_upper = tr_upper(line)
+            if "İL" in line_upper and ":" in line:
+                parts = line.split(":")
+                if len(parts) > 1:
+                    possible_city = tr_upper(parts[1].strip())
+                    if possible_city in PLATE_CODES:
+                        city_name = possible_city
+                        city_code = PLATE_CODES[possible_city]
+                        break
+                        
         if not city_name:
+            # Fallback to general lookup
             for city, code in PLATE_CODES.items():
-                # Word boundary check for city names to avoid substrings (like 'VAN' matching in 'UNVAN')
                 if re.search(r'\b' + re.escape(city) + r'\b', text_upper):
                     city_name = city
                     city_code = code
@@ -100,7 +157,11 @@ def main():
         print(json.dumps({
             "start_date": start_date,
             "city_name": city_name,
-            "city_code": city_code
+            "city_code": city_code,
+            "firma_adi": firma_adi,
+            "adres": adres,
+            "sgk_no": sgk_no,
+            "isg_katip_id": isg_katip_id
         }))
 
     except Exception as e:

@@ -27,7 +27,8 @@ $type_titles = [
     'engelli_rampasi' => 'Engelli Rampası Periyodik Kontrol Raporu',
     'boyler_tanki' => 'Boyler Tankı Periyodik Kontrol Raporu',
     'jenarator' => 'Jeneratör Periyodik Kontrol Raporu',
-    'kamera_bakim' => 'Kamera Bakım Raporu'
+    'kamera_bakim' => 'Kamera Bakım Raporu',
+    'yangin_tesisat' => 'Yangın Tesisatı Güvenliği Raporu'
 ];
 
 if (!isset($type_titles[$type])) {
@@ -79,6 +80,9 @@ try {
         case 'kamera_bakim':
             $stmt = $pdo->prepare("SELECT r.*, ap.adi_soyadi FROM kamera_bakim_reports r LEFT JOIN authorized_persons ap ON r.authorized_person_id = ap.id WHERE r.id = ? AND r.kurum_id = ?");
             break;
+        case 'yangin_tesisat':
+            $stmt = $pdo->prepare("SELECT r.*, ap.adi_soyadi FROM yangin_tesisat_reports r LEFT JOIN authorized_persons ap ON r.authorized_person_id = ap.id WHERE r.id = ? AND r.kurum_id = ?");
+            break;
     }
     
     $stmt->execute([$id, $kurum_id]);
@@ -116,13 +120,13 @@ try {
                 <td style="border: 1px solid #ccc; padding: 4px 6px; background-color: #f0f0f0; font-weight: bold;">Kontrolör</td>
                 <td style="border: 1px solid #ccc; padding: 4px 6px;"><?php echo htmlspecialchars($ap_name); ?></td>
                 <td style="border: 1px solid #ccc; padding: 4px 6px; background-color: #f0f0f0; font-weight: bold;">Sonuç</td>
-                <td style="border: 1px solid #ccc; padding: 4px 6px; font-weight: bold; color: <?php echo ($result == 'UYGUNDUR' || $result == 'GÜVENLİDİR' || $result == 'GÜVENLİ') ? 'green' : 'red'; ?>;">
+                <td style="border: 1px solid #ccc; padding: 4px 6px; font-weight: bold; color: <?php echo (in_array($result, ['UYGUNDUR', 'GÜVENLİDİR', 'GÜVENLİ', 'GUVENLIDIR'])) ? 'green' : 'red'; ?>;">
                     <?php 
-                    $display_result = $result;
-                    if ($result == 'GÜVENLİDİR') $display_result = 'UYGUNDUR';
-                    elseif ($result == 'GÜVENLİ DEĞİLDİR') $display_result = 'UYGUN DEĞİLDİR';
-                    echo htmlspecialchars($display_result); 
-                    ?>
+                     $display_result = $result;
+                     if ($result == 'GÜVENLİDİR' || $result == 'GÜVENLİ' || $result == 'GUVENLIDIR') $display_result = 'UYGUNDUR';
+                     elseif ($result == 'GÜVENLİ DEĞİLDİR' || $result == 'GÜVENLİ DEĞİL' || $result == 'GUVENLI DEGILDIR') $display_result = 'UYGUN DEĞİLDİR';
+                     echo htmlspecialchars($display_result); 
+                     ?>
                 </td>
             </tr>
         </table>
@@ -220,6 +224,25 @@ try {
                     'q10' => 'Aküde şişme ve sızıntı var mı?',
                     'q11' => 'Kablolar uygun mu?',
                     'q12' => 'Yetkili servis bakım kayıtları düzenli olarak tutuluyor mu?'
+                ];
+            } elseif ($type === 'yangin_tesisat') {
+                $checklist_questions = [
+                    'q1' => 'Yangın söndürme tesisatının projesi mevcut mu?',
+                    'q2' => 'Yangın söndürme tesisatının periyodik kontrol raporu var mı?',
+                    'q3' => 'Basınçlandırma ve duman tahliye tesisatının test ve periyodik kontrolü yapılmış mı?',
+                    'q4' => 'Güvenlik ve kontrol sistemlerinin bulunduğu yerde, kırmızı zemin üzerine fosforlu sarı veya beyaz renkte "YANGIN 112" yazılmış mı?',
+                    'q5' => 'İtfaiye araçlarının gerektiğinde binaya kolaylıkla ulaşımı ve yaklaşması sağlanabilmekte midir?',
+                    'q6' => 'Acil durum yönlendirmeleri mevcut mudur?',
+                    'q7' => 'Yangın dolaplarına erişim uygun mu, çalışır durumda mı?',
+                    'q8' => 'Yangın dolapları boru bağlantı çapı ve vanası uygun mu? (hidrolik hesaplara göre belirlenir-en az 50 mm.)',
+                    'q9' => 'Yangın su deposu var mı, dolum ve emme vanaları açık mı?',
+                    'q10' => 'Yangın pompaları çalışır durumda mı ve elektrik bağlantısı (kofradan önce) uygun mu?',
+                    'q11' => 'Yangın pompalarından ikisi de elektrikli ise en azından asıl pompa jeneratörle %100 beslenebiliyor mu?',
+                    'q12' => 'Sprinkler tesisatı varsa, projesine uygun mu?',
+                    'q13' => 'Taşınabilir söndürme tüplerinin TS standartlarına göre bakımları yapılmış mı?',
+                    'q14' => 'Merdiven sahanlığından yangın merdivenine erişim uygun mu?',
+                    'q15' => 'Yangın merdiveni kapıları dışarı açılabiliyor mu?',
+                    'q16' => 'Yangın algılama ve ihbar sistemi aktif olarak çalışıyor mu?'
                 ];
             }
 
