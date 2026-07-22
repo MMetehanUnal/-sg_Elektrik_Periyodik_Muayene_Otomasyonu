@@ -1,4 +1,8 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 require_once '../includes/db.php';
 require_once '../includes/functions.php';
 require_once '../includes/auth.php';
@@ -83,10 +87,158 @@ $url_map = [
     'boyler_tanki' => 'boyler_tanki_yazdir.php',
     'jenarator' => 'jenarator_yazdir.php',
     'kamera_bakim' => 'kamera_bakim_yazdir.php',
-    'yangin_tesisat' => 'yangin_tesisat_yazdir.php'
+    'yangin_tesisat' => 'yangin_tesisat_yazdir.php',
+    'katodik_koruma' => 'katodik_koruma_yazdir.php'
 ];
 
-// Fetch and prepare pages using PHP CLI proc_open to prevent built-in server deadlock
+// Helper function to fetch report page HTML using multi-strategy fallbacks
+function fetchReportHtml($print_script, $kurum_id, $id, $php_path) {
+    // Strategy 1: Local In-Process Eval Sandboxing (Fastest, 100% compatible, avoids "Cannot redeclare" function clashing)
+    global $pdo;
+    
+    $old_get = $_GET;
+    $_GET['id'] = $id;
+    
+    ob_start();
+    try {
+        if (file_exists($print_script)) {
+            $code = file_get_contents($print_script);
+            
+            // Strip open and close PHP tags
+            $code = preg_replace('/^\s*<\?php/i', '', $code);
+            $code = preg_replace('/\?>\s*$/', '', $code);
+            
+            // Define unique function prefix for this file (e.g. rapor_yazdir)
+            $prefix = str_replace('.php', '', basename($print_script));
+            
+            // Rename function definitions (chk and renderHeader) to prevent redeclaration clash
+            $code = preg_replace('/function\s+chk\s*\(/i', 'function ' . $prefix . '_chk(', $code);
+            $code = preg_replace('/function\s+renderHeader\s*\(/i', 'function ' . $prefix . '_renderHeader(', $code);
+            
+            // Rename function invocations (chk( and renderHeader() )
+            $code = preg_replace('/(?<![a-zA-Z0-9_\$])chk\s*\(/i', $prefix . '_chk(', $code);
+            $code = preg_replace('/(?<![a-zA-Z0-9_\$])renderHeader\s*\(/i', $prefix . '_renderHeader(', $code);
+            
+            eval($code);
+        } else {
+            echo "Error: print script $print_script not found.";
+        }
+    } catch (Throwable $e) {
+        echo "Error rendering $print_script: " . $e->getMessage() . " on line " . $e->getLine();
+    }
+    $html = ob_get_clean();
+    
+    $_GET = $old_get;
+    
+    if ($html !== false && strlen(trim($html)) > 0) {
+        return $html;
+    }
+
+    // Strategy 2: Local HTTP Request via cURL (Backup)
+    if (function_exists('curl_init') && isset($_SERVER['HTTP_HOST'])) {
+        $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'];
+        $dir = dirname($_SERVER['REQUEST_URI']);
+        $url = $protocol . '://' . $host . $dir . '/' . $print_script . '?id=' . $id;
+        
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 5); // Short timeout to fail fast if loopback blocks
+        
+        // Pass current cookies (including PHPSESSID) to maintain login session
+        $cookies = [];
+        foreach ($_COOKIE as $name => $value) {
+            $cookies[] = $name . '=' . urlencode($value);
+        }
+        if (!empty($cookies)) {
+            curl_setopt($ch, CURLOPT_COOKIE, implode('; ', $cookies));
+        }
+        
+        // Disable SSL certificate verification (useful for development and self-signed certificates)
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        
+        $html = curl_exec($ch);
+        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($html !== false && $http_code === 200) {
+            return $html;
+        }
+    }
+
+    // Strategy 3: Local HTTP Request via file_get_contents (Backup)
+    if (ini_get('allow_url_fopen') && isset($_SERVER['HTTP_HOST'])) {
+        $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'];
+        $dir = dirname($_SERVER['REQUEST_URI']);
+        $url = $protocol . '://' . $host . $dir . '/' . $print_script . '?id=' . $id;
+        
+        $cookie_str = '';
+        foreach ($_COOKIE as $name => $value) {
+            $cookie_str .= $name . '=' . urlencode($value) . '; ';
+        }
+        
+        $opts = [
+            'http' => [
+                'method' => 'GET',
+                'header' => "Cookie: " . $cookie_str . "\r\n",
+                'timeout' => 5, // Short timeout
+                'ignore_errors' => true
+            ],
+            'ssl' => [
+                'verify_peer' => false,
+                'verify_peer_name' => false
+            ]
+        ];
+        
+        $context = stream_context_create($opts);
+        $html = @file_get_contents($url, false, $context);
+        if ($html !== false) {
+            return $html;
+        }
+    }
+
+    // Strategy 4: proc_open PHP CLI (Good fallback for XAMPP / Local systems)
+    if (function_exists('proc_open')) {
+        $descriptorspec = [
+           0 => ["pipe", "r"], // stdin
+           1 => ["pipe", "w"], // stdout
+           2 => ["pipe", "w"]  // stderr
+        ];
+        
+        $env = getenv();
+        if (empty($env)) {
+            $env = $_SERVER;
+        }
+        if (!isset($env['SystemRoot'])) {
+            $env['SystemRoot'] = getenv('SystemRoot') ?: 'C:\\Windows';
+        }
+        if (!isset($env['windir'])) {
+            $env['windir'] = getenv('windir') ?: 'C:\\Windows';
+        }
+        $env['ACTIVE_INSTITUTION_ID'] = $kurum_id;
+        $env['REPORT_ID'] = $id;
+        
+        $process = @proc_open('"' . $php_path . '" ' . escapeshellarg($print_script), $descriptorspec, $pipes, dirname(__FILE__), $env);
+        
+        if (is_resource($process)) {
+            $html = stream_get_contents($pipes[1]);
+            fclose($pipes[0]);
+            fclose($pipes[1]);
+            fclose($pipes[2]);
+            proc_close($process);
+            if ($html) {
+                return $html;
+            }
+        }
+    }
+
+    return '';
+}
+
 $php_path = 'php'; // Default fallback
 if (file_exists('C:\\xampp\\php\\php.exe')) {
     $php_path = 'C:\\xampp\\php\\php.exe';
@@ -108,54 +260,26 @@ foreach ($report_items as $item) {
     
     $print_script = $url_map[$type];
     
-    // Execute locally via proc_open
-    $descriptorspec = [
-       0 => ["pipe", "r"], // stdin
-       1 => ["pipe", "w"], // stdout
-       2 => ["pipe", "w"]  // stderr
-    ];
+    $html = fetchReportHtml($print_script, $kurum_id, $id, $php_path);
     
-    $env = getenv();
-    if (empty($env)) {
-        $env = $_SERVER;
-    }
-    if (!isset($env['SystemRoot'])) {
-        $env['SystemRoot'] = getenv('SystemRoot') ?: 'C:\\Windows';
-    }
-    if (!isset($env['windir'])) {
-        $env['windir'] = getenv('windir') ?: 'C:\\Windows';
-    }
-    $env['ACTIVE_INSTITUTION_ID'] = $kurum_id;
-    $env['REPORT_ID'] = $id;
-    
-    $process = proc_open('"' . $php_path . '" ' . escapeshellarg($print_script), $descriptorspec, $pipes, dirname(__FILE__), $env);
-    
-    if (is_resource($process)) {
-        $html = stream_get_contents($pipes[1]);
-        fclose($pipes[0]);
-        fclose($pipes[1]);
-        fclose($pipes[2]);
-        proc_close($process);
-        
-        if ($html) {
-            // Extract styles
-            preg_match_all('/<style[^>]*>(.*?)<\/style>/is', $html, $style_matches);
-            if (!empty($style_matches[1])) {
-                $extracted_styles .= implode("\n", $style_matches[1]) . "\n";
-            }
-            
-            // Extract body
-            if (preg_match('/<body[^>]*>(.*?)<\/body>/is', $html, $body_matches)) {
-                $body_content = $body_matches[1];
-            } else {
-                $body_content = $html;
-            }
-            
-            // Strip out printing navigation / buttons
-            $body_content = preg_replace('/<div class="no-print"[^>]*>.*?<\/div>/is', '', $body_content);
-            
-            $pages_html[] = $body_content;
+    if ($html) {
+        // Extract styles
+        preg_match_all('/<style[^>]*>(.*?)<\/style>/is', $html, $style_matches);
+        if (!empty($style_matches[1])) {
+            $extracted_styles .= implode("\n", $style_matches[1]) . "\n";
         }
+        
+        // Extract body
+        if (preg_match('/<body[^>]*>(.*?)<\/body>/is', $html, $body_matches)) {
+            $body_content = $body_matches[1];
+        } else {
+            $body_content = $html;
+        }
+        
+        // Strip out printing navigation / buttons
+        $body_content = preg_replace('/<div class="no-print"[^>]*>.*?<\/div>/is', '', $body_content);
+        
+        $pages_html[] = $body_content;
     }
 }
 

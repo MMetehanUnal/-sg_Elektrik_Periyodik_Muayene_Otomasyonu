@@ -52,6 +52,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // Handle Photo Deletion
+    if (isset($_POST['delete_photo_id'])) {
+        $del_photo_id = (int)$_POST['delete_photo_id'];
+        $stmt_del = $pdo->prepare("SELECT file_path FROM fire_detection_photos WHERE id = ? AND report_id = ?");
+        $stmt_del->execute([$del_photo_id, $report_id]);
+        $photo_to_del = $stmt_del->fetch();
+        if ($photo_to_del) {
+            $full_del_path = __DIR__ . '/../../' . $photo_to_del['file_path'];
+            if (file_exists($full_del_path)) {
+                unlink($full_del_path);
+            }
+            $pdo->prepare("DELETE FROM fire_detection_photos WHERE id = ?")->execute([$del_photo_id]);
+        }
+        redirect("yangin_algilama_sonuclar.php?report_id=$report_id&status=success");
+    }
+
+    // Handle Photo Uploads
+    if (isset($_FILES['photos']) && !empty($_FILES['photos']['name'][0])) {
+        $allowed = ['jpg', 'jpeg', 'png', 'webp'];
+        $uploadDir = __DIR__ . '/../../uploads/yangin_algilama/' . $report_id . '/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+        
+        $files = $_FILES['photos'];
+        for ($i = 0; $i < count($files['name']); $i++) {
+            if ($files['error'][$i] === UPLOAD_ERR_OK) {
+                $ext = strtolower(pathinfo($files['name'][$i], PATHINFO_EXTENSION));
+                if (in_array($ext, $allowed)) {
+                    $newFileName = 'photo_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+                    $targetPath = $uploadDir . $newFileName;
+                    $dbPath = 'uploads/yangin_algilama/' . $report_id . '/' . $newFileName;
+                    
+                    if (move_uploaded_file($files['tmp_name'][$i], $targetPath)) {
+                        if (function_exists('compressImage')) {
+                            compressImage($targetPath, $targetPath, 80);
+                        }
+                        
+                        $stmt_p = $pdo->prepare("INSERT INTO fire_detection_photos (report_id, file_path) VALUES (?, ?)");
+                        $stmt_p->execute([$report_id, $dbPath]);
+                    }
+                }
+            }
+        }
+    }
+
     redirect("yangin_algilama_sonuclar.php?report_id=$report_id&status=success");
 }
 
@@ -125,7 +171,7 @@ $questions = [
     <div class="alert alert-success">Sonuçlar başarıyla kaydedildi.</div>
 <?php endif; ?>
 
-<form method="POST">
+<form method="POST" enctype="multipart/form-data">
     <?php foreach ($questions as $group => $items): ?>
         <div class="card mb-4">
             <div class="card-header bg-danger text-white">
@@ -248,6 +294,46 @@ $questions = [
                     </div>
                 <?php endforeach; ?>
             <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- FOTOĞRAFLAR -->
+    <div class="card mb-4">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-0">FOTOĞRAFLAR</h5>
+        </div>
+        <div class="card-body">
+            <?php
+            $stmt_p_list = $pdo->prepare("SELECT * FROM fire_detection_photos WHERE report_id = ? ORDER BY id ASC");
+            $stmt_ph_params = [$report_id];
+            $stmt_p_list->execute($stmt_ph_params);
+            $photos = $stmt_p_list->fetchAll();
+            ?>
+            
+            <?php if (!empty($photos)): ?>
+                <div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
+                    <?php foreach ($photos as $ph): ?>
+                        <div class="col">
+                            <div class="card h-100 shadow-sm border position-relative">
+                                <img src="../../<?php echo htmlspecialchars($ph['file_path']); ?>" class="card-img-top" style="height: 150px; object-fit: cover;" alt="Yangın Algılama Fotoğraf">
+                                <div class="card-body p-2 text-center">
+                                    <button type="submit" name="delete_photo_id" value="<?php echo $ph['id']; ?>" class="btn btn-sm btn-outline-danger w-100" onclick="return confirm('Bu fotoğrafı silmek istediğinize emin misiniz?');">
+                                        <i class="fas fa-trash-alt me-1"></i> Sil
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php else: ?>
+                <p class="text-muted mb-3"><i class="fas fa-image me-1"></i> Henüz fotoğraf yüklenmemiş.</p>
+            <?php endif; ?>
+
+            <div class="mb-3">
+                <label class="form-label font-weight-bold">Yeni Fotoğraf(lar) Yükle</label>
+                <input type="file" class="form-control" name="photos[]" multiple accept="image/*">
+                <small class="text-muted">Birden fazla fotoğraf seçip yükleyebilirsiniz (JPG, JPEG, PNG, WEBP).</small>
+            </div>
         </div>
     </div>
 

@@ -41,6 +41,21 @@ $all_devices = $stmt->fetchAll();
 
 // Handle Form Submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Handle photo deletion request
+    if (isset($_POST['delete_photo_id'])) {
+        $del_photo_id = (int)$_POST['delete_photo_id'];
+        $stmt_del = $pdo->prepare("SELECT file_path FROM fire_detection_photos WHERE id = ? AND report_id = ?");
+        $stmt_del->execute([$del_photo_id, $report_id]);
+        $photo_to_del = $stmt_del->fetch();
+        if ($photo_to_del) {
+            $full_del_path = __DIR__ . '/../../' . $photo_to_del['file_path'];
+            if (file_exists($full_del_path)) {
+                unlink($full_del_path);
+            }
+            $pdo->prepare("DELETE FROM fire_detection_photos WHERE id = ?")->execute([$del_photo_id]);
+        }
+        redirect("yangin_algilama_kontrol.php?id=$report_id&status=success_delete");
+    }
     // Basic fields
     $report_date = cleanInput($_POST['report_date']);
     $start_date = cleanInput($_POST['start_date']);
@@ -218,6 +233,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$report_id)
             $report_id = $pdo->lastInsertId();
 
+        // Handle Photo Uploads
+        if (isset($_FILES['photos']) && !empty($_FILES['photos']['name'][0])) {
+            $allowed = ['jpg', 'jpeg', 'png', 'webp'];
+            $uploadDir = __DIR__ . '/../../uploads/yangin_algilama/' . $report_id . '/';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0755, true);
+            }
+            
+            $files = $_FILES['photos'];
+            for ($i = 0; $i < count($files['name']); $i++) {
+                if ($files['error'][$i] === UPLOAD_ERR_OK) {
+                    $ext = strtolower(pathinfo($files['name'][$i], PATHINFO_EXTENSION));
+                    if (in_array($ext, $allowed)) {
+                        $newFileName = 'photo_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+                        $targetPath = $uploadDir . $newFileName;
+                        $dbPath = 'uploads/yangin_algilama/' . $report_id . '/' . $newFileName;
+                        
+                        if (move_uploaded_file($files['tmp_name'][$i], $targetPath)) {
+                            if (function_exists('compressImage')) {
+                                compressImage($targetPath, $targetPath, 80);
+                            }
+                            
+                            $stmt_p = $pdo->prepare("INSERT INTO fire_detection_photos (report_id, file_path) VALUES (?, ?)");
+                            $stmt_p->execute([$report_id, $dbPath]);
+                        }
+                    }
+                }
+            }
+        }
+
         redirect("yangin_algilama_kontrol.php?id=$report_id&status=success");
     } catch (PDOException $e) {
         $save_error = "Hata: " . $e->getMessage();
@@ -234,6 +279,9 @@ include '../../includes/header.php';
 
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">Yangın Algılama ve Uyarı Sistemleri Periyodik Kontrol Formu</h1>
+    <a href="/pages/raporlar.php" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Vazgeç ve Raporlara Dön
+    </a>
 </div>
 
 <?php if (isset($_GET['status']) && $_GET['status'] == 'success'): ?>
@@ -252,7 +300,7 @@ include '../../includes/header.php';
     </div>
 <?php endif; ?>
 
-<form method="POST" action="">
+<form method="POST" action="" enctype="multipart/form-data">
     <div class="accordion" id="accordionForm">
 
         <!-- 1. Bölüm: Firma Bilgileri -->
@@ -718,7 +766,43 @@ include '../../includes/header.php';
                     data-bs-toggle="collapse" data-bs-target="#c6">6. Fotoğraflar</button></h2>
             <div id="c6" class="accordion-collapse collapse" data-bs-parent="#accordionForm">
                 <div class="accordion-body">
-                    <p class="text-muted">Fotoğraf yükleme özelliği bir sonraki güncellemede eklenecektir.</p>
+                    <?php
+                    if ($report_id) {
+                        $stmt_p_list = $pdo->prepare("SELECT * FROM fire_detection_photos WHERE report_id = ? ORDER BY id ASC");
+                        $stmt_p_list->execute([$report_id]);
+                        $photos = $stmt_p_list->fetchAll();
+                    } else {
+                        $photos = [];
+                    }
+                    ?>
+                    
+                    <?php if (!empty($photos)): ?>
+                        <div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
+                            <?php foreach ($photos as $ph): ?>
+                                <div class="col">
+                                    <div class="card h-100 shadow-sm border position-relative">
+                                        <img src="../../<?php echo htmlspecialchars($ph['file_path']); ?>" class="card-img-top" style="height: 150px; object-fit: cover;" alt="Yangın Algılama Fotoğraf">
+                                        <div class="card-body p-2 text-center">
+                                            <form method="POST" onsubmit="return confirm('Bu fotoğrafı silmek istediğinize emin misiniz?');" style="display:inline;">
+                                                <input type="hidden" name="delete_photo_id" value="<?php echo $ph['id']; ?>">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger w-100">
+                                                    <i class="fas fa-trash-alt me-1"></i> Sil
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php else: ?>
+                        <p class="text-muted mb-3"><i class="fas fa-image me-1"></i> Henüz fotoğraf yüklenmemiş.</p>
+                    <?php endif; ?>
+
+                    <div class="mb-3">
+                        <label class="form-label font-weight-bold">Yeni Fotoğraf(lar) Yükle</label>
+                        <input type="file" class="form-control" name="photos[]" multiple accept="image/*">
+                        <small class="text-muted">Birden fazla fotoğraf seçip yükleyebilirsiniz (JPG, JPEG, PNG, WEBP).</small>
+                    </div>
                 </div>
             </div>
         </div>

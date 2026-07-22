@@ -977,72 +977,11 @@ function renderHeader()
     </div>
 
     <div class="section-title-bg">10. SONUÇ VE KANAAT</div>
-    <div style="border: 1px solid black; border-top:none; padding: 10px; line-height: 1.4; font-size: 9px;">
-        <p>Periyodik kontrol tarihi itibari ile yukarıda teknik özellikleri belirtilen Elektrik
-            Tesisatının fonksiyon testleri muayenesi sonrasında mevcut şartlar altında
-            <strong>kullanımı
-                <?php echo ($data['result'] == 'UYGUNDUR' || $data['result'] == 'GÜVENLİDİR') ? 'uygundur' : 'uygun değildir'; ?>.</strong>
-            TS HD 60364 standardına göre kullanımı uygun olmayan tesisatlar aşağıdaki şekilde
-            işaretlenir:<br>
-            Tespit edilen hafif kusurların bir sonraki periyodik kontrol tarihine kadar giderilmesi
-            gereklidir.<br>
-            (*)Bu not, sadece hafif kusur tespit edilmesi durumunda yazılacaktır.
+    <div style="border: 1px solid black; border-top:none; padding: 10px; line-height: 1.4; font-size: 9.5px;">
+        <p style="margin: 0; padding-bottom: 8px;">Periyodik kontrol tarihi itibari ile yukarıda teknik özellikleri belirtilen Elektrik Tesisatının fonksiyon testleri muayenesi sonrasında mevcut şartlar altında</p>
+        <p style="font-size: 13px; font-weight: bold; text-transform: uppercase; margin: 0;">
+            KULLANIMI <?php echo ($data['result'] == 'UYGUNDUR' || $data['result'] == 'GÜVENLİDİR') ? 'UYGUNDUR' : 'UYGUN DEĞİLDİR'; ?>
         </p>
-
-        <p><strong>Ağır kusur tanımları:</strong><br>
-            <strong>Gözle Kontrol Bölümü</strong><br>
-            1. Faza erişim engeli IP2X koruma sınıfını sağlamıyorsa,<br>
-            2. Kablo ek noktaları yalıtımlı değilse, pano içinde ucu açıkta iletken varsa,<br>
-            3. Pano elemanları bağlantı noktalarında kontak gevşekliği (seri ark) tespit
-            edilmişse,<br>
-            4. PVC izoleli kablolarda ve pano elemanlarının dokunulabilen metal olmayan yüzeylerinde
-            aşırı ısınma tespit edilmişse.
-        </p>
-
-        <p><strong>Fonksiyon Testleri Bölümü</strong><br>
-            1. Hesaplanan 3 fazlı kısa devre akımı, pano içinde bulunan herhangi bir aşırı akım
-            koruma cihazı etiketinde yazan kısa devre kesme kapasitesinden (Icu) fazla ise,<br>
-            2. Aşırı akım koruma elemanı değerleri linye kesiti ile uyumsuz ise,<br>
-            3. El ulaşma mesafesindeki metal bölümler, ekipmanın toprak barası veya toprak ucuyla eş
-            potansiyel değilse,<br>
-            4. RCD performans testi sonuçları yetersiz ise,<br>
-            5. Kablo şalter koordinasyonunun aşağıdaki uygunsuzluğu;<br>
-            Devre Tasarım Akımı (Ib), Devre Kesici Akımı (In) ve Kablo Akım Taşıma Kapasitesi (Iz)
-            için Ib&lt;In&lt;Iz sağlanmadıysa,<br>
-            6. Zemin yalıtımının aşağıdaki uygunsuzlukları;<br>
-            b) El ulaşma mesafesinde bulunan zemin izolasyonu uygun boyutta değilse, (EİTY Md.
-            33d)<br>
-            c) Zemin izolasyon direnci 50 kΩ’dan büyük değilse, (EİTY Md. 48)<br>
-            7. N/PEN iletkeni kesitinin ve kullanım yerinin aşağıdaki uygunsuzlukları;<br>
-            a) N/PEN kesiti ile faz iletkeni kesiti eşit değilse. (EİTY Md 57b3-ii-1)<br>
-            İstisna: N/PEN kesitinin faz iletkeninin kesitinden küçük olması durumunda (örneğin
-            3x70+35 mm² gibi) faz iletkenlerini koruyan devre kesici anma akımının, N/PEN iletkeni
-            kesitine göre (örnekteki 35mm²'ye göre) belirlenmesi kuralı ihlal edildiyse (EİTY Md
-            57b3-ii-2)<br>
-            b) PEN iletkeni kesiti >10 mm² değilse (EİTY Md 36)<br>
-            c) PEN iletkeni yangın tehlikesi olan yerlerden geçirilmemesi kuralı ihlal edildiyse
-            (EİTY Md 64)<br>
-            d) PEN iletkeni Exproof tehkeliteli bölge sınırları içinden geçirilmemesi kuralı ihlal
-            edildiyse (IEC 60079-14)<br>
-            8. PE koruma iletkeni kesiti aşağıdaki uygunsuzluğu;<br>
-            Koruma iletkeni kesiti ETTY Md. 9e1’ide verilen formülle yapılan hesap sonucuna ve ETTY
-            Çizelge 8’de verilen tabloya uygun değilse,<br>
-            9. PD potansiyel dengeleme iletkeni kesitinin aşağıdaki uygunsuzluğu;<br>
-            6 mm² &lt; PD &lt; 25 mm² değilse,<br>
-            10. Tamamlayıcı potansiyel dengeleme: PD > 4mm² değilse.<br>
-            Ağır kusur olarak değerlendirilir.
-        </p>
-
-        <p style="font-weight: bold;">
-            C1 – Tehlike mevcut. Yaralanma riski. Derhal düzeltici eylem gerekli.<br>
-            C2 – Potansiyel olarak tehlikeli – acil düzeltici eylem gerekli.<br>
-            C3 – İyileştirme önerilir.
-        </p>
-
-        <p>Bu rapor <strong>“Alçak Gerilim Topraklama Tesisatı Kontrol Raporu”</strong> ile birlikte
-            geçerlidir.<br>
-            Tespit edilen hafif kusurların bir sonraki periyodik kontrol tarihine kadar giderilmesi
-            gereklidir. (Sadece hafif kusur tespit edilmesi durumunda yazılacaktır.)</p>
     </div>
 
     <div class="section-title-bg">11. PERİYODİK KONTROLLERİ YAPMAYA YETKİLİ KİŞİ BİLGİLERİ ve ONAY

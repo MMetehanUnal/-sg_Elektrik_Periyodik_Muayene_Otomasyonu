@@ -1,3 +1,15 @@
+<?php
+$current_page = $_SERVER['PHP_SELF'];
+$base_name = basename($current_page);
+$is_periyodik_active = (
+    strpos($current_page, '/forms/') !== false && 
+    !in_array($base_name, ['tesis_bilgileri.php', 'topraklama_olcumler_5_1.php', 'topraklama_olcumler_5_2.php', 'yangin_algilama_sonuclar.php'])
+);
+$is_sonuclar_active = (
+    strpos($current_page, '/results/') !== false || 
+    in_array($base_name, ['topraklama_olcumler_5_1.php', 'topraklama_olcumler_5_2.php', 'yangin_algilama_sonuclar.php'])
+);
+?>
 <!DOCTYPE html>
 <html lang="tr">
 
@@ -123,79 +135,83 @@
                             </li>
 
                             <li class="nav-item">
-                                <a class="nav-link side-link has-submenu" data-bs-toggle="collapse" href="#periyodikSubmenu"
-                                    role="button" aria-expanded="false">
+                                <a class="nav-link side-link has-submenu<?php echo $is_periyodik_active ? '' : ' collapsed'; ?>" data-bs-toggle="collapse" href="#periyodikSubmenu"
+                                    role="button" aria-expanded="<?php echo $is_periyodik_active ? 'true' : 'false'; ?>">
                                     <div class="d-flex align-items-center justify-content-between">
                                         <span><i class="fas fa-clipboard-check me-2"></i> Periyodik Kontrol</span>
                                         <i class="fas fa-chevron-down small"></i>
                                     </div>
                                 </a>
-                                <div class="collapse" id="periyodikSubmenu">
+                                <div class="collapse<?php echo $is_periyodik_active ? ' show' : ''; ?>" id="periyodikSubmenu">
                                     <ul class="nav flex-column ms-3 mt-1">
                                         <li class="nav-item">
-                                            <a class="nav-link side-link-sub" href="/pages/forms/topraklama_kontrol.php">
+                                            <a class="nav-link side-link-sub <?php echo basename($_SERVER['PHP_SELF']) == 'topraklama_kontrol.php' ? 'active' : ''; ?>" href="/pages/forms/topraklama_kontrol.php">
                                                 Topraklama
                                             </a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link side-link-sub" href="/pages/forms/ic_tesisat_kontrol.php">
+                                            <a class="nav-link side-link-sub <?php echo basename($_SERVER['PHP_SELF']) == 'ic_tesisat_kontrol.php' ? 'active' : ''; ?>" href="/pages/forms/ic_tesisat_kontrol.php">
                                                 İç Tesisat
                                             </a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link side-link-sub"
-                                                href="/pages/forms/yildirimdan_korunma_kontrol.php">
+                                            <a class="nav-link side-link-sub <?php echo basename($_SERVER['PHP_SELF']) == 'yildirimdan_korunma_kontrol.php' ? 'active' : ''; ?>" href="/pages/forms/yildirimdan_korunma_kontrol.php">
                                                 Yıldırımdan Korunma
                                             </a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link side-link-sub" href="/pages/forms/yangin_algilama_kontrol.php">
+                                            <a class="nav-link side-link-sub <?php echo basename($_SERVER['PHP_SELF']) == 'yangin_algilama_kontrol.php' ? 'active' : ''; ?>" href="/pages/forms/yangin_algilama_kontrol.php">
                                                 Yangın Algılama
                                             </a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link side-link-sub" href="/pages/forms/yangin_tesisat_kontrol.php">
+                                            <a class="nav-link side-link-sub <?php echo basename($_SERVER['PHP_SELF']) == 'yangin_tesisat_kontrol.php' ? 'active' : ''; ?>" href="/pages/forms/yangin_tesisat_kontrol.php">
                                                 Yangın Tesisatı
                                             </a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link side-link-sub" href="/pages/forms/sihhi_tesisat_kontrol.php">
+                                            <a class="nav-link side-link-sub <?php echo basename($_SERVER['PHP_SELF']) == 'sihhi_tesisat_kontrol.php' ? 'active' : ''; ?>" href="/pages/forms/sihhi_tesisat_kontrol.php">
                                                 Sıhhi Tesisat
                                             </a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link side-link-sub" href="/pages/forms/gaz_tesisat_kontrol.php">
+                                            <a class="nav-link side-link-sub <?php echo basename($_SERVER['PHP_SELF']) == 'gaz_tesisat_kontrol.php' ? 'active' : ''; ?>" href="/pages/forms/gaz_tesisat_kontrol.php">
                                                 Gaz Tesisatı
                                             </a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link side-link-sub" href="/pages/forms/isinma_tesisat_kontrol.php">
+                                            <a class="nav-link side-link-sub <?php echo basename($_SERVER['PHP_SELF']) == 'isinma_tesisat_kontrol.php' ? 'active' : ''; ?>" href="/pages/forms/isinma_tesisat_kontrol.php">
                                                 Isınma Tesisatı
                                             </a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link side-link-sub" href="/pages/forms/genlesme_tanki_kontrol.php">
+                                            <a class="nav-link side-link-sub <?php echo basename($_SERVER['PHP_SELF']) == 'genlesme_tanki_kontrol.php' ? 'active' : ''; ?>" href="/pages/forms/genlesme_tanki_kontrol.php">
                                                 Genleşme Tankı
                                             </a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link side-link-sub" href="/pages/forms/engelli_rampasi_kontrol.php">
+                                            <a class="nav-link side-link-sub <?php echo basename($_SERVER['PHP_SELF']) == 'engelli_rampasi_kontrol.php' ? 'active' : ''; ?>" href="/pages/forms/engelli_rampasi_kontrol.php">
                                                 Engelli Rampası
                                             </a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link side-link-sub" href="/pages/forms/boyler_tanki_kontrol.php">
+                                            <a class="nav-link side-link-sub <?php echo basename($_SERVER['PHP_SELF']) == 'boyler_tanki_kontrol.php' ? 'active' : ''; ?>" href="/pages/forms/boyler_tanki_kontrol.php">
                                                 Boyler Tankı
                                             </a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link side-link-sub" href="/pages/forms/jenarator_kontrol.php">
+                                            <a class="nav-link side-link-sub <?php echo basename($_SERVER['PHP_SELF']) == 'jenarator_kontrol.php' ? 'active' : ''; ?>" href="/pages/forms/jenarator_kontrol.php">
                                                 Jeneratör
                                             </a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link side-link-sub" href="/pages/forms/kamera_bakim_kontrol.php">
+                                            <a class="nav-link side-link-sub <?php echo basename($_SERVER['PHP_SELF']) == 'kamera_bakim_kontrol.php' ? 'active' : ''; ?>" href="/pages/forms/kamera_bakim_kontrol.php">
                                                 Kamera Bakım
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link side-link-sub <?php echo basename($_SERVER['PHP_SELF']) == 'katodik_koruma_kontrol.php' ? 'active' : ''; ?>" href="/pages/forms/katodik_koruma_kontrol.php">
+                                                Katodik Koruma
                                             </a>
                                         </li>
                                     </ul>
@@ -203,89 +219,83 @@
                             </li>
 
                             <li class="nav-item">
-                                <a class="nav-link side-link has-submenu" data-bs-toggle="collapse" href="#sonuclarSubmenu"
-                                    role="button" aria-expanded="false">
+                                <a class="nav-link side-link has-submenu<?php echo $is_sonuclar_active ? '' : ' collapsed'; ?>" data-bs-toggle="collapse" href="#sonuclarSubmenu"
+                                    role="button" aria-expanded="<?php echo $is_sonuclar_active ? 'true' : 'false'; ?>">
                                     <div class="d-flex align-items-center justify-content-between">
                                         <span><i class="fas fa-list-check me-2"></i> Sonuçlar</span>
                                         <i class="fas fa-chevron-down small"></i>
                                     </div>
                                 </a>
-                                <div class="collapse" id="sonuclarSubmenu">
+                                <div class="collapse<?php echo $is_sonuclar_active ? ' show' : ''; ?>" id="sonuclarSubmenu">
                                     <ul class="nav flex-column ms-3 mt-1">
                                         <li class="nav-item">
-                                            <a class="nav-link side-link-sub" href="/pages/results/topraklama_sonuclar.php">
+                                            <a class="nav-link side-link-sub <?php echo in_array(basename($_SERVER['PHP_SELF']), ['topraklama_sonuclar.php', 'topraklama_olcumler_5_1.php', 'topraklama_olcumler_5_2.php']) ? 'active' : ''; ?>" href="/pages/results/topraklama_sonuclar.php">
                                                 Topraklama Sonuçları
                                             </a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link side-link-sub" href="/pages/results/ic_tesisat_sonuclar.php">
+                                            <a class="nav-link side-link-sub <?php echo in_array(basename($_SERVER['PHP_SELF']), ['ic_tesisat_sonuclar.php', 'ic_tesisat_panel_sonuclar.php']) ? 'active' : ''; ?>" href="/pages/results/ic_tesisat_sonuclar.php">
                                                 İç Tesisat Sonuçları
                                             </a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link side-link-sub"
-                                                href="/pages/results/yildirimdan_korunma_sonuclar.php">
+                                            <a class="nav-link side-link-sub <?php echo basename($_SERVER['PHP_SELF']) == 'yildirimdan_korunma_sonuclar.php' ? 'active' : ''; ?>" href="/pages/results/yildirimdan_korunma_sonuclar.php">
                                                 Yıldırımdan Korunma
                                             </a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link side-link-sub"
-                                                href="/pages/results/yangin_algilama_sonuclar.php">
+                                            <a class="nav-link side-link-sub <?php echo basename($_SERVER['PHP_SELF']) == 'yangin_algilama_sonuclar.php' ? 'active' : ''; ?>" href="/pages/results/yangin_algilama_sonuclar.php">
                                                 Yangın Algılama
                                             </a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link side-link-sub"
-                                                href="/pages/results/yangin_tesisat_sonuclar.php">
+                                            <a class="nav-link side-link-sub <?php echo basename($_SERVER['PHP_SELF']) == 'yangin_tesisat_sonuclar.php' ? 'active' : ''; ?>" href="/pages/results/yangin_tesisat_sonuclar.php">
                                                 Yangın Tesisatı
                                             </a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link side-link-sub"
-                                                href="/pages/results/sihhi_tesisat_sonuclar.php">
+                                            <a class="nav-link side-link-sub <?php echo basename($_SERVER['PHP_SELF']) == 'sihhi_tesisat_sonuclar.php' ? 'active' : ''; ?>" href="/pages/results/sihhi_tesisat_sonuclar.php">
                                                 Sıhhi Tesisat
                                             </a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link side-link-sub"
-                                                href="/pages/results/gaz_tesisat_sonuclar.php">
+                                            <a class="nav-link side-link-sub <?php echo basename($_SERVER['PHP_SELF']) == 'gaz_tesisat_sonuclar.php' ? 'active' : ''; ?>" href="/pages/results/gaz_tesisat_sonuclar.php">
                                                 Gaz Tesisatı
                                             </a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link side-link-sub"
-                                                href="/pages/results/isinma_tesisat_sonuclar.php">
+                                            <a class="nav-link side-link-sub <?php echo basename($_SERVER['PHP_SELF']) == 'isinma_tesisat_sonuclar.php' ? 'active' : ''; ?>" href="/pages/results/isinma_tesisat_sonuclar.php">
                                                 Isınma Tesisatı
                                             </a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link side-link-sub"
-                                                href="/pages/results/genlesme_tanki_sonuclar.php">
+                                            <a class="nav-link side-link-sub <?php echo basename($_SERVER['PHP_SELF']) == 'genlesme_tanki_sonuclar.php' ? 'active' : ''; ?>" href="/pages/results/genlesme_tanki_sonuclar.php">
                                                 Genleşme Tankı
                                             </a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link side-link-sub"
-                                                href="/pages/results/engelli_rampasi_sonuclar.php">
+                                            <a class="nav-link side-link-sub <?php echo basename($_SERVER['PHP_SELF']) == 'engelli_rampasi_sonuclar.php' ? 'active' : ''; ?>" href="/pages/results/engelli_rampasi_sonuclar.php">
                                                 Engelli Rampası
                                             </a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link side-link-sub"
-                                                href="/pages/results/boyler_tanki_sonuclar.php">
+                                            <a class="nav-link side-link-sub <?php echo basename($_SERVER['PHP_SELF']) == 'boyler_tanki_sonuclar.php' ? 'active' : ''; ?>" href="/pages/results/boyler_tanki_sonuclar.php">
                                                 Boyler Tankı
                                             </a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link side-link-sub"
-                                                href="/pages/results/jenarator_sonuclar.php">
+                                            <a class="nav-link side-link-sub <?php echo basename($_SERVER['PHP_SELF']) == 'jenarator_sonuclar.php' ? 'active' : ''; ?>" href="/pages/results/jenarator_sonuclar.php">
                                                 Jeneratör
                                             </a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link side-link-sub"
-                                                href="/pages/results/kamera_bakim_sonuclar.php">
+                                            <a class="nav-link side-link-sub <?php echo basename($_SERVER['PHP_SELF']) == 'kamera_bakim_sonuclar.php' ? 'active' : ''; ?>" href="/pages/results/kamera_bakim_sonuclar.php">
                                                 Kamera Bakım
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link side-link-sub <?php echo basename($_SERVER['PHP_SELF']) == 'katodik_koruma_sonuclar.php' ? 'active' : ''; ?>" href="/pages/results/katodik_koruma_sonuclar.php">
+                                                Katodik Koruma
                                             </a>
                                         </li>
                                     </ul>

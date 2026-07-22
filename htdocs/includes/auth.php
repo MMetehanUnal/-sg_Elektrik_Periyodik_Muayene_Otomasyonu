@@ -3,7 +3,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 if (php_sapi_name() === 'cli') {
-    $_SESSION['user_id'] = 2;
+    $_SESSION['user_id'] = 1;
     $_SESSION['role'] = 'admin';
     $_SESSION['active_institution_id'] = getenv('ACTIVE_INSTITUTION_ID') ?: 1;
     if (getenv('REPORT_ID')) {
@@ -30,9 +30,16 @@ if (!isset($_SESSION['user_id'])) {
             require_once $jwtFile;
             $payload = jwtDecode($token);
             if ($payload) {
-                $_SESSION['user_id'] = $payload['user_id'];
-                $_SESSION['username'] = $payload['username'];
-                $_SESSION['role'] = $payload['role'];
+                global $pdo;
+                if (isset($pdo)) {
+                    $stmt_check = $pdo->prepare("SELECT id FROM users WHERE id = ?");
+                    $stmt_check->execute([$payload['user_id']]);
+                    if ($stmt_check->fetch()) {
+                        $_SESSION['user_id'] = $payload['user_id'];
+                        $_SESSION['username'] = $payload['username'];
+                        $_SESSION['role'] = $payload['role'];
+                    }
+                }
             }
         }
     }
@@ -40,7 +47,25 @@ if (!isset($_SESSION['user_id'])) {
 // ---------------------------------------------------------
 
 function isLoggedIn() {
-    return isset($_SESSION['user_id']);
+    global $pdo;
+    if (!isset($_SESSION['user_id'])) {
+        return false;
+    }
+    if (isset($pdo)) {
+        try {
+            $stmt = $pdo->prepare("SELECT id FROM users WHERE id = ?");
+            $stmt->execute([$_SESSION['user_id']]);
+            if (!$stmt->fetch()) {
+                unset($_SESSION['user_id']);
+                unset($_SESSION['username']);
+                unset($_SESSION['role']);
+                return false;
+            }
+        } catch (Exception $e) {
+            // connection issue fallback
+        }
+    }
+    return true;
 }
 
 function requireLogin() {

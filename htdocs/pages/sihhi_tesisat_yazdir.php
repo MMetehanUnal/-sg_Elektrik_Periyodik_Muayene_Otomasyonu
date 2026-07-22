@@ -354,34 +354,25 @@ function renderHeader()
                             <?php endif; ?>
                         </div>
 
-                        <!-- 5. KONTROLÜ GERÇEKLEŞTİREN VE İMZA (Side by Side Compact Section) -->
-                        <div class="section-title-bg">5. KONTROLÜ GERÇEKLEŞTİREN</div>
-                        <table class="signature-table-wrapper" style="margin-top: 2px;">
+                        <!-- 5. KONTROLÜ GERÇEKLEŞTİREN VE İMZA -->
+                        <div class="section-title-bg">5. KONTROLÜ GERÇEKLEŞTİREN YETKİLİ KİŞİ BİLGİLERİ VE ONAY</div>
+                        <table style="width: 100%; border-collapse: collapse; margin-top: 4px;">
                             <tr>
-                                <td style="width: 65%; vertical-align: top; border: none;">
-                                    <table class="compact-inner-table">
-                                        <tr>
-                                            <td style="width: 30%;" class="header-bg fw-bold">Ad Soyad / Mesleği</td>
-                                            <td style="width: 70%;" class="fw-bold"><?php echo htmlspecialchars($data['adi_soyadi'] ?? '-'); ?> / <?php echo htmlspecialchars($data['meslegi'] ?? '-'); ?></td>
-                                        </tr>
-                                        <tr>
-                                            <td class="header-bg fw-bold">Diploma No</td>
-                                            <td><?php echo htmlspecialchars($data['diploma_no'] ?? '-'); ?></td>
-                                        </tr>
-                                        <tr>
-                                            <td class="header-bg fw-bold">Oda Sicil No</td>
-                                            <td><?php echo htmlspecialchars($data['oda_sicil_no'] ?? '-'); ?></td>
-                                        </tr>
-                                        <tr>
-                                            <td class="header-bg fw-bold">Bakanlık Sicil No</td>
-                                            <td><?php echo htmlspecialchars($data['kayit_no'] ?? '-'); ?></td>
-                                        </tr>
-                                    </table>
-                                </td>
-                                <td style="width: 35%; text-align: center; vertical-align: middle; font-weight: bold; font-size: 11px; background-color: #fafafa; border: 1px solid #000;">
-                                    İMZA / ONAY
-                                    <br><br><br>
-                                </td>
+                                <td class="header-bg fw-bold" style="width: 25%; border: 1px solid #000; padding: 4px 6px;">Adı Soyadı / Unvanı</td>
+                                <td style="width: 45%; border: 1px solid #000; padding: 4px 6px;"><?php echo htmlspecialchars($data['adi_soyadi'] ?? '-'); ?> / <?php echo htmlspecialchars($data['meslegi'] ?? '-'); ?></td>
+                                <td rowspan="4" style="width: 30%; vertical-align: middle; text-align: center; font-weight: bold; border: 1px solid #000; background-color: #fafafa; padding: 4px 6px;">İMZA / ONAY</td>
+                            </tr>
+                            <tr>
+                                <td class="header-bg fw-bold" style="border: 1px solid #000; padding: 4px 6px;">Diploma No / Tarih</td>
+                                <td style="border: 1px solid #000; padding: 4px 6px;"><?php echo htmlspecialchars($data['diploma_no'] ?? '-'); ?></td>
+                            </tr>
+                            <tr>
+                                <td class="header-bg fw-bold" style="border: 1px solid #000; padding: 4px 6px;">Oda Sicil No</td>
+                                <td style="border: 1px solid #000; padding: 4px 6px;"><?php echo htmlspecialchars($data['oda_sicil_no'] ?? '-'); ?></td>
+                            </tr>
+                            <tr>
+                                <td class="header-bg fw-bold" style="border: 1px solid #000; padding: 4px 6px;">Bakanlık Sicil No (Kayıt No)</td>
+                                <td style="border: 1px solid #000; padding: 4px 6px;"><?php echo htmlspecialchars($data['kayit_no'] ?? '-'); ?></td>
                             </tr>
                         </table>
 

@@ -406,6 +406,7 @@ function renderHeader()
                                 <td><?php echo htmlspecialchars($data['d2_serial'] ?? '-'); ?></td>
                             </tr>
                             <tr>
+                                <td class="header-bg">Kalibrasyon numarası</td>
                                 <td><?php echo htmlspecialchars($data['d1_cal_no'] ?? ''); ?></td>
                                 <td class="header-bg">Kalibrasyon numarası</td>
                                 <td><?php echo htmlspecialchars($data['d2_cal_no'] ?? '-'); ?></td>
@@ -540,9 +541,25 @@ function renderHeader()
                         </div>
 
                         <div class="section-title">FOTOĞRAFLAR</div>
-                        <div
-                            style="border: 1px solid black; padding: 5px; min-height: 120px; text-align: center; color: #ccc; display: flex; align-items: center; justify-content: center; font-size: 14px;">
-                            SİSTEM FOTOĞRAFLARI
+                        <div style="border: 1px solid black; padding: 10px; background: #fff;">
+                            <?php
+                            $stmt_ph = $pdo->prepare("SELECT * FROM fire_detection_photos WHERE report_id = ? ORDER BY id ASC");
+                            $stmt_ph->execute([$id]);
+                            $y_photos = $stmt_ph->fetchAll();
+                            if (!empty($y_photos)):
+                            ?>
+                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                                    <?php foreach ($y_photos as $ph): ?>
+                                        <div style="border: 1px solid #ccc; padding: 3px; text-align: center; background: #fff;">
+                                            <img src="../<?php echo htmlspecialchars($ph['file_path']); ?>" style="max-width: 100%; max-height: 140px; object-fit: contain; display: block; margin: 0 auto;" alt="Yangın Algılama Fotoğraf">
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php else: ?>
+                                <div style="min-height: 120px; text-align: center; color: #ccc; display: flex; align-items: center; justify-content: center; font-size: 14px;">
+                                    SİSTEM FOTOĞRAFLARI BULUNMAMAKTADIR
+                                </div>
+                            <?php endif; ?>
                         </div>
 
                         <div class="section-title">7. NOTLAR</div>
@@ -551,49 +568,10 @@ function renderHeader()
                         </div>
 
                         <div class="section-title">8. SONUÇ VE KANAAT</div>
-                        <div style="border: 1px solid black; padding: 10px; line-height: 1.4;">
-                            <p>Periyodik kontrol tarihi itibariyle yukarıda teknik özellikleri belirtilen Yangın
-                                Algılama ve Uyarı Sisteminin periyodik muayenesi sonrasında mevcut şartlar altında
-                                kullanımı 1 yıl süreyle; <br>
-                                <strong><?php echo ($data['result'] == 'UYGUNDUR' || $data['result'] == 'GÜVENLİDİR') ? 'UYGUNDUR' : 'UYGUN DEĞİLDİR'; ?></strong>
-                            </p>
-
-                            <p>Tespit edilen hafif kusurların bir sonraki periyodik kontrol tarihine kadar
-                                giderilmesi
-                                gereklidir.<br>
-                                <span class="small-text">(Bu not, sadece hafif kusur tespit edilmesi durumunda
-                                    yazılacaktır.)</span>
-                            </p>
-
-                            <p><strong>Ağır kusurlar tanımı:</strong><br>
-                                a) Dedektörler, Yangın uyarı butonları ve sirenlerin test sonuçları yetersiz
-                                ise,<br>
-                                b) Yangın paneli gelen uyarıları algılamıyorsa,<br>
-                                c) Kaçış yolları ve çıkış hollerinde acil aydınlatma düzenleri ve aydınlık seviyesi
-                                yetersiz ise,<br>
-                                d) Akü gerilimi düşükse,<br>
-                                Ağır kusur olarak değerlendirilmelidir.
-                            </p>
-
-                            <p><strong>AÇIKLAMALAR:</strong><br>
-                                1) Kontrol talep eden firmadan, kontrole gitmeden önce “Duman Dedektörü Test
-                                Aparatı”
-                                sağlaması istenir. Böyle bir aparat işyerinde mevcutsa duman dedektörlerinin
-                                testleri
-                                yapılır. Aksi takdirde, tehlikeli olacağından kâğıt veya bez yakarak test yapılmaz.
-                                Bu
-                                nedenle veya herhangi bir başka nedenle test yapılamamışsa notlar bölümünde
-                                belirtilir.<br>
-                                2) Isı dedektörlerinin kontrolü ”Isı Dedektörü Test Aparatı” ile yapılır. İşyerinde
-                                böyle bir aparat yok ise bu testler fön cihazları ile yapılabilir.<br>
-                                3) Yangın uyarı butonlarının testleri kendi üzerinden yapılır.<br>
-                                4) Siren testleri “Binaların Yangından Korunması Hakkında Yönetmelik” Md.81-(5)
-                                hükümleri gözetilerek yapılmalıdır.<br>
-                                5) Periyodik kontrol, yangın algılama ve uyarı sistemi projesinin doğruluğunu
-                                kapsamaz.
-                                Onaylı projeyi temel alır. Proje bulunmaması durumunda yapılan kontrol durum
-                                tespitine
-                                yöneliktir. Yapılan tespitlerin uygunluğu proje ihtiyacını ortadan kaldırmaz.
+                        <div style="border: 1px solid black; padding: 10px; line-height: 1.4; font-size: 9.5px;">
+                            <p style="margin: 0; padding-bottom: 8px;">Periyodik kontrol tarihi itibariyle yukarıda teknik özellikleri belirtilen Yangın Algılama ve Uyarı Sisteminin periyodik muayenesi sonrasında mevcut şartlar altında kullanımı 1 yıl süreyle;</p>
+                            <p style="font-size: 13px; font-weight: bold; text-transform: uppercase; margin: 0;">
+                                KULLANIMI <?php echo ($data['result'] == 'UYGUNDUR' || $data['result'] == 'GÜVENLİDİR') ? 'UYGUNDUR' : 'UYGUN DEĞİLDİR'; ?>
                             </p>
                         </div>
 
@@ -619,6 +597,7 @@ function renderHeader()
                         <div class="small-text" style="font-size: 8px;">Bu rapor ..........[yazı (rakam)] nüsha
                             olarak
                             hazırlanmıştır.</div>
+
                     </div>
                 </td>
             </tr>

@@ -619,34 +619,10 @@ function renderHeader()
                         </div>
 
                         <div class="section-title-bg">7. SONUÇ VE KANAAT</div>
-                        <div style="border: 1px solid black; padding: 10px; line-height: 1.4;">
-                            <p>Periyodik kontrol tarihi itibari ile yukarıda teknik özellikleri belirtilen Yıldırımdan
-                                Korunma Tesisatı muayenesi sonrasında mevcut şartlar altında <strong>kullanımı
-                                    <?php echo ($data['result'] == 'UYGUNDUR' || $data['result'] == 'GÜVENLİDİR') ? 'uygundur' : 'uygun değildir'; ?>.</strong>
-                            </p>
-
-                            <p><strong>Ağır kusurlar tanımı:</strong><br>
-                                <strong>1. Yıldırımdan Korunma sisteminin koruma yaptığı kapsama alanının aşağıdaki
-                                    uygunsuzluğu;</strong><br>
-                                Yıldırım risk analizine göre hazırlanan yıldırımdan korunma kapsama alanı, binayı veya
-                                binaları kapsamıyorsa.
-                            </p>
-
-                            <p><strong>2. ESE (Aktif-Radyoaktif) Paratoner Bölümünde yıldırımdan korunma tesisatındaki
-                                    aşağıdaki fiziki uygunsuzlukları;</strong><br>
-                                a) Koruma Borusu İçindeki İletkenler PVC hortum içinde değilse,<br>
-                                b) Koruma Borusu >250 cm değilse,<br>
-                                c) İndirme iletkenleri 2x50 mm² bakır veya eşdeğer iletken değilse,<br>
-                                d) Topraklama hattı tesis edilmemesi ve bina topraklaması ile eşpotansiyel değilse,<br>
-                                e) Topraklama tesis direnci 10 Ω’dan küçük değilse.
-                            </p>
-
-                            <p><strong>3. Faraday Kafesi Bölümünde yıldırımdan korunma tesisatındaki aşağıdaki fiziki
-                                    uygunsuzlukları;</strong><br>
-                                a) Çatıda ağ risk analizinde belirlenen genişlikten büyükse,<br>
-                                b) Özellikle yanıcı, parlayıcı, patlayıcı madde bulunan binalarda tehlikeli bölge içinde
-                                düşey yakalama çubukları olmaması kuralı ihlal edildiyse,<br>
-                                c) Topraklama tesis direnci 10 Ω’dan küçük değilse.
+                        <div style="border: 1px solid black; padding: 10px; line-height: 1.4; font-size: 9.5px;">
+                            <p style="margin: 0; padding-bottom: 8px;">Periyodik kontrol tarihi itibari ile yukarıda teknik özellikleri belirtilen Yıldırımdan Korunma Tesisatı muayenesi sonrasında mevcut şartlar altında</p>
+                            <p style="font-size: 13px; font-weight: bold; text-transform: uppercase; margin: 0;">
+                                KULLANIMI <?php echo ($data['result'] == 'UYGUNDUR' || $data['result'] == 'GÜVENLİDİR') ? 'UYGUNDUR' : 'UYGUN DEĞİLDİR'; ?>
                             </p>
                         </div>
 

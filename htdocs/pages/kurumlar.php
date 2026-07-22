@@ -5,6 +5,21 @@ require_once '../includes/auth.php';
 
 requireLogin();
 
+// AJAX handler to get next available kurum_kodu for a specific il_kodu
+if (isset($_GET['get_next_code'])) {
+    header('Content-Type: application/json');
+    $il_kodu = cleanInput($_GET['get_next_code']);
+    $next_code = 1;
+    $stmt_max = $pdo->prepare("SELECT MAX(CAST(kurum_kodu AS UNSIGNED)) as max_code FROM institutions WHERE user_id = ? AND il_kodu = ?");
+    $stmt_max->execute([$_SESSION['user_id'], $il_kodu]);
+    $max_row = $stmt_max->fetch();
+    if ($max_row && $max_row['max_code'] !== null) {
+        $next_code = intval($max_row['max_code']) + 1;
+    }
+    echo json_encode(['next_code' => str_pad($next_code, 3, '0', STR_PAD_LEFT)]);
+    exit;
+}
+
 // Auto-add contract_pdf column if not exists
 try {
     $pdo->exec("ALTER TABLE institutions ADD COLUMN contract_pdf VARCHAR(255) DEFAULT NULL");
@@ -12,20 +27,106 @@ try {
     // Column already exists, ignore
 }
 
+function deleteInstitutionCascade($pdo, $kurum_id, $user_id) {
+    // 1. Child tables of reports
+    $child_deletes = [
+        "DELETE FROM measurements_5_1 WHERE report_id IN (SELECT id FROM grounding_reports WHERE kurum_id = ?)",
+        "DELETE FROM measurements_5_2 WHERE report_id IN (SELECT id FROM grounding_reports WHERE kurum_id = ?)",
+        
+        "DELETE FROM ic_tesisat_panels WHERE report_id IN (SELECT id FROM internal_installation_reports WHERE kurum_id = ?)",
+        "DELETE FROM ic_tesisat_photos WHERE report_id IN (SELECT id FROM internal_installation_reports WHERE kurum_id = ?)",
+        "DELETE FROM ic_tesisat_section5 WHERE report_id IN (SELECT id FROM internal_installation_reports WHERE kurum_id = ?)",
+        "DELETE FROM ic_tesisat_section6_1 WHERE report_id IN (SELECT id FROM internal_installation_reports WHERE kurum_id = ?)",
+        "DELETE FROM ic_tesisat_section6_1_rows WHERE report_id IN (SELECT id FROM internal_installation_reports WHERE kurum_id = ?)",
+        "DELETE FROM ic_tesisat_section6_2_rows WHERE report_id IN (SELECT id FROM internal_installation_reports WHERE kurum_id = ?)",
+        "DELETE FROM ic_tesisat_section6_3_rows WHERE report_id IN (SELECT id FROM internal_installation_reports WHERE kurum_id = ?)",
+        "DELETE FROM ic_tesisat_section6_header WHERE report_id IN (SELECT id FROM internal_installation_reports WHERE kurum_id = ?)",
+        
+        "DELETE FROM fire_detection_photos WHERE report_id IN (SELECT id FROM fire_detection_reports WHERE kurum_id = ?)",
+        "DELETE FROM fire_detection_section5_2 WHERE report_id IN (SELECT id FROM fire_detection_reports WHERE kurum_id = ?)",
+        
+        "DELETE FROM katodik_koruma_measurements WHERE report_id IN (SELECT id FROM katodik_koruma_reports WHERE kurum_id = ?)",
+        
+        "DELETE FROM lightning_protection_section4 WHERE report_id IN (SELECT id FROM lightning_protection_reports WHERE kurum_id = ?)"
+    ];
+    
+    foreach ($child_deletes as $sql) {
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([$kurum_id]);
+    }
+    
+    // 2. Report tables
+    $report_tables = [
+        'boyler_tanki_reports',
+        'engelli_rampasi_reports',
+        'facility_info',
+        'fire_detection_reports',
+        'gaz_tesisat_reports',
+        'general_reports',
+        'genlesme_tanki_reports',
+        'grounding_reports',
+        'internal_installation_reports',
+        'isinma_tesisat_reports',
+        'jenarator_reports',
+        'kamera_bakim_reports',
+        'katodik_koruma_reports',
+        'lightning_protection_reports',
+        'sihhi_tesisat_reports',
+        'yangin_tesisat_reports'
+    ];
+    
+    foreach ($report_tables as $table) {
+        $stmt = $pdo->prepare("DELETE FROM {$table} WHERE kurum_id = ?");
+        $stmt->execute([$kurum_id]);
+    }
+    
+    // 3. Delete institution
+    $stmt = $pdo->prepare("DELETE FROM institutions WHERE id = ? AND user_id = ?");
+    $stmt->execute([$kurum_id, $user_id]);
+}
+
 // Handle Delete
 if (isset($_GET['delete'])) {
-    $id = cleanInput($_GET['delete']);
-    $stmt = $pdo->prepare("DELETE FROM institutions WHERE id = ? AND user_id = ?");
-    $stmt->execute([$id, $_SESSION['user_id']]);
+    $id = (int)cleanInput($_GET['delete']);
+    deleteInstitutionCascade($pdo, $id, $_SESSION['user_id']);
     redirect('kurumlar.php');
+}
+
+// Handle Bulk Delete
+if (isset($_POST['bulk_delete']) && isset($_POST['selected_institutions'])) {
+    $selected_ids = $_POST['selected_institutions'];
+    if (is_array($selected_ids)) {
+        foreach ($selected_ids as $id) {
+            $id = (int)$id;
+            deleteInstitutionCascade($pdo, $id, $_SESSION['user_id']);
+        }
+    }
+    if (isset($_SESSION['active_institution_id']) && in_array($_SESSION['active_institution_id'], $selected_ids)) {
+        unset($_SESSION['active_institution_id']);
+        unset($_SESSION['active_institution_name']);
+    }
+    redirect('kurumlar.php');
+}
+
+// Handle Selection
+if (isset($_GET['select'])) {
+    $id = cleanInput($_GET['select']);
+    $stmt = $pdo->prepare("SELECT id, firma_adi FROM institutions WHERE id = ? AND user_id = ?");
+    $stmt->execute([$id, $_SESSION['user_id']]);
+    $inst = $stmt->fetch();
+    if ($inst) {
+        $_SESSION['active_institution_id'] = $inst['id'];
+        $_SESSION['active_institution_name'] = $inst['firma_adi'];
+        redirect('forms/tesis_bilgileri.php');
+    }
 }
 
 // Handle Add/Edit
 $editMode = false;
 
 $next_code = 1;
-$stmt_max = $pdo->prepare("SELECT MAX(CAST(kurum_kodu AS UNSIGNED)) as max_code FROM institutions WHERE user_id = ?");
-$stmt_max->execute([$_SESSION['user_id']]);
+$stmt_max = $pdo->prepare("SELECT MAX(CAST(kurum_kodu AS UNSIGNED)) as max_code FROM institutions WHERE user_id = ? AND il_kodu = ?");
+$stmt_max->execute([$_SESSION['user_id'], '01']);
 $max_row = $stmt_max->fetch();
 if ($max_row && $max_row['max_code'] !== null) {
     $next_code = intval($max_row['max_code']) + 1;
@@ -73,8 +174,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $pdo->prepare("UPDATE institutions SET firma_adi=?, adresi=?, sgk_sicil_no=?, il_kodu=?, kurum_kodu=?, isg_katip_id=?, report_date=?, start_date=?, end_date=?, next_control_date=?, contract_pdf=? WHERE id=? AND user_id=?");
         $stmt->execute([$firma_adi, $adresi, $sgk_sicil_no, $il_kodu, $kurum_kodu, $isg_katip_id, $report_date, $start_date, $end_date, $next_control_date, $contract_pdf, $_POST['id'], $_SESSION['user_id']]);
     } else {
+        // Dynamic auto-increment check per province
+        $next_code = 1;
+        $stmt_max = $pdo->prepare("SELECT MAX(CAST(kurum_kodu AS UNSIGNED)) as max_code FROM institutions WHERE user_id = ? AND il_kodu = ?");
+        $stmt_max->execute([$_SESSION['user_id'], $il_kodu]);
+        $max_row = $stmt_max->fetch();
+        if ($max_row && $max_row['max_code'] !== null) {
+            $next_code = intval($max_row['max_code']) + 1;
+        }
+        $calculated_kurum_kodu = str_pad($next_code, 3, '0', STR_PAD_LEFT);
+
         $stmt = $pdo->prepare("INSERT INTO institutions (user_id, firma_adi, adresi, sgk_sicil_no, il_kodu, kurum_kodu, isg_katip_id, report_date, start_date, end_date, next_control_date, contract_pdf) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$_SESSION['user_id'], $firma_adi, $adresi, $sgk_sicil_no, $il_kodu, $kurum_kodu, $isg_katip_id, $report_date, $start_date, $end_date, $next_control_date, $contract_pdf]);
+        $stmt->execute([$_SESSION['user_id'], $firma_adi, $adresi, $sgk_sicil_no, $il_kodu, $calculated_kurum_kodu, $isg_katip_id, $report_date, $start_date, $end_date, $next_control_date, $contract_pdf]);
     }
     redirect('kurumlar.php');
 }
@@ -177,71 +288,136 @@ include '../includes/header.php';
 
     <!-- List Column -->
     <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">Kurum Listesi</div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Firma Adı</th>
-                                <th>Adres</th>
-                                <th>Kurum ID</th>
-                                <th>İşlemler</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php
-                            $stmt = $pdo->prepare("SELECT * FROM institutions WHERE user_id = ? ORDER BY id DESC");
-                            $stmt->execute([$_SESSION['user_id']]);
-                            while ($row = $stmt->fetch()):
-                                ?>
+        <form id="bulkDeleteForm" method="POST" action="">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Kurum Listesi</span>
+                    <button type="submit" name="bulk_delete" class="btn btn-sm btn-danger shadow-sm" id="btnBulkDelete" style="display: none;" onclick="return confirm('Seçilen kurumları ve onlara ait tüm periyodik kontrol raporlarını kalıcı olarak silmek istediğinize emin misiniz?')">
+                        <i class="fas fa-trash-alt me-1"></i> Seçilenleri Sil (<span id="selectedCount">0</span>)
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="fas fa-search text-muted"></i></span>
+                            <input type="text" id="searchInput" class="form-control" placeholder="Firma adı, adres veya Kurum ID'ye göre ara...">
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
                                 <tr>
-                                    <td>
-                                        <?php echo $row['id']; ?>
-                                    </td>
-                                    <td>
-                                        <?php echo htmlspecialchars($row['firma_adi']); ?>
-                                    </td>
-                                    <td title="<?php echo htmlspecialchars($row['adresi']); ?>">
-                                        <?php echo htmlspecialchars(substr($row['adresi'], 0, 30)) . '...'; ?>
-                                    </td>
-                                    <td><span class="badge bg-info text-dark">
-                                            <?php echo $row['il_kodu'] . '-' . $row['kurum_kodu']; ?>
-                                        </span></td>
-                                    <td>
-                                        <div class="btn-group">
-                                            <?php if (!empty($row['contract_pdf'])): ?>
-                                                <a href="../uploads/sozlesmeler/<?php echo htmlspecialchars($row['contract_pdf']); ?>" target="_blank" class="btn btn-sm btn-outline-danger" title="İSG Katip Sözleşmesi">
-                                                    <i class="fas fa-file-pdf text-danger me-1"></i> Sözleşme
-                                                </a>
-                                            <?php else: ?>
-                                                <a href="?edit=<?php echo $row['id']; ?>" class="btn btn-sm btn-outline-secondary" title="Sözleşme Yükle">
-                                                    <i class="fas fa-file-pdf text-muted me-1"></i> Sözleşme Yok
-                                                </a>
-                                            <?php endif; ?>
-                                            <a href="?edit=<?php echo $row['id']; ?>" class="btn btn-sm btn-warning" title="Düzenle">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            <a href="?delete=<?php echo $row['id']; ?>" class="btn btn-sm btn-danger" title="Sil"
-                                                onclick="return confirm('Silmek istediğinize emin misiniz?')">
-                                                <i class="fas fa-trash"></i>
-                                            </a>
-                                        </div>
-                                    </td>
+                                    <th style="width: 3%;"><input type="checkbox" class="form-check-input" id="selectAll"></th>
+                                    <th class="sortable" data-column="id" style="cursor: pointer; user-select: none;">ID <i class="fas fa-sort text-muted ms-1"></i></th>
+                                    <th class="sortable" data-column="firma_adi" style="cursor: pointer; user-select: none;">Firma Adı <i class="fas fa-sort text-muted ms-1"></i></th>
+                                    <th class="sortable" data-column="adresi" style="cursor: pointer; user-select: none;">Adres <i class="fas fa-sort text-muted ms-1"></i></th>
+                                    <th class="sortable" data-column="kurum_id" style="cursor: pointer; user-select: none;">Kurum ID <i class="fas fa-sort text-muted ms-1"></i></th>
+                                    <th>İşlemler</th>
                                 </tr>
-                            <?php endwhile; ?>
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                <?php
+                                $stmt = $pdo->prepare("SELECT * FROM institutions WHERE user_id = ? ORDER BY id DESC");
+                                $stmt->execute([$_SESSION['user_id']]);
+                                while ($row = $stmt->fetch()):
+                                    $isActive = (isset($_SESSION['active_institution_id']) && $_SESSION['active_institution_id'] == $row['id']);
+                                    ?>
+                                    <tr class="<?php echo $isActive ? 'table-success' : ''; ?>">
+                                        <td>
+                                            <input type="checkbox" class="form-check-input institution-checkbox" name="selected_institutions[]" value="<?php echo $row['id']; ?>">
+                                        </td>
+                                        <td>
+                                            <?php echo $row['id']; ?>
+                                        </td>
+                                        <td>
+                                            <?php echo htmlspecialchars($row['firma_adi']); ?>
+                                        </td>
+                                        <td title="<?php echo htmlspecialchars($row['adresi']); ?>">
+                                            <?php echo htmlspecialchars(substr($row['adresi'], 0, 30)) . '...'; ?>
+                                        </td>
+                                        <td><span class="badge bg-info text-dark">
+                                                <?php echo $row['il_kodu'] . '-' . $row['kurum_kodu']; ?>
+                                            </span></td>
+                                        <td>
+                                            <div class="btn-group">
+                                                <?php if ($isActive): ?>
+                                                    <button type="button" class="btn btn-sm btn-success" disabled title="Seçili Kurum">
+                                                        <i class="fas fa-check-circle"></i> Seçili
+                                                    </button>
+                                                <?php else: ?>
+                                                    <a href="?select=<?php echo $row['id']; ?>" class="btn btn-sm btn-primary" title="Kurumu Seç ve Başla">
+                                                        <i class="fas fa-play"></i> Seç
+                                                    </a>
+                                                <?php endif; ?>
+                                                <?php if (!empty($row['contract_pdf'])): ?>
+                                                    <a href="../uploads/sozlesmeler/<?php echo htmlspecialchars($row['contract_pdf']); ?>" target="_blank" class="btn btn-sm btn-outline-danger" title="İSG Katip Sözleşmesi">
+                                                        <i class="fas fa-file-pdf text-danger me-1"></i> Sözleşme
+                                                    </a>
+                                                <?php else: ?>
+                                                    <a href="?edit=<?php echo $row['id']; ?>" class="btn btn-sm btn-outline-secondary" title="Sözleşme Yükle">
+                                                        <i class="fas fa-file-pdf text-muted me-1"></i> Sözleşme Yok
+                                                    </a>
+                                                <?php endif; ?>
+                                                <a href="?edit=<?php echo $row['id']; ?>" class="btn btn-sm btn-warning" title="Düzenle">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <a href="?delete=<?php echo $row['id']; ?>" class="btn btn-sm btn-danger" title="Sil"
+                                                    onclick="return confirm('Bu kurumu ve buna ait tüm periyodik raporları silmek istediğinize emin misiniz?')">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endwhile; ?>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
-        </div>
+        </form>
     </div>
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+// Diagnostic console and screen overlay logger for any Javascript errors (registered immediately)
+window.addEventListener('error', function(e) {
+    console.error("Global JS Error Captured:", e);
+    const errDiv = document.createElement('div');
+    errDiv.style.position = 'fixed';
+    errDiv.style.bottom = '10px';
+    errDiv.style.left = '10px';
+    errDiv.style.backgroundColor = '#dc3545';
+    errDiv.style.color = 'white';
+    errDiv.style.padding = '8px 12px';
+    errDiv.style.zIndex = '9999';
+    errDiv.style.borderRadius = '4px';
+    errDiv.style.fontFamily = 'monospace';
+    errDiv.style.fontSize = '11px';
+    errDiv.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
+    errDiv.textContent = 'JS Hata: ' + e.message + ' (' + e.filename.split('/').pop() + ':' + e.lineno + ')';
+    document.body.appendChild(errDiv);
+});
+
+function initKurumlarPage() {
+    const ilKoduInput = document.querySelector('input[name="il_kodu"]');
+    const kurumKoduInput = document.querySelector('input[name="kurum_kodu"]');
+    
+    if (ilKoduInput && kurumKoduInput) {
+        ilKoduInput.addEventListener('input', function() {
+            const val = this.value.trim();
+            if (val.length === 2 && !isNaN(val)) {
+                fetch(`?get_next_code=${val}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.next_code) {
+                            kurumKoduInput.value = data.next_code;
+                        }
+                    })
+                    .catch(err => console.error('Error fetching next code:', err));
+            }
+        });
+    }
+
     const pdfLoader = document.getElementById('contract_pdf_loader');
     const statusMsg = document.getElementById('pdf_status_message');
     
@@ -294,7 +470,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                     
                     if (data.city_code) {
-                        document.querySelector('input[name="il_kodu"]').value = data.city_code;
+                        const ilInput = document.querySelector('input[name="il_kodu"]');
+                        if (ilInput) {
+                            ilInput.value = data.city_code;
+                            ilInput.dispatchEvent(new Event('input'));
+                        }
                     }
                     
                     if (data.firma_adi) {
@@ -318,7 +498,150 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
-});
+
+    // Turkish-friendly lowercase converter helper
+    function safeLowerCase(str) {
+        if (!str) return '';
+        try {
+            return str.toLocaleLowerCase('tr');
+        } catch (err) {
+            return str.toLowerCase();
+        }
+    }
+
+    // Client-side Search/Filter logic
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            try {
+                const query = safeLowerCase(this.value).trim();
+                const rows = document.querySelectorAll('.col-md-8 .table tbody tr');
+                
+                rows.forEach(row => {
+                    const c1 = row.children[1];
+                    const c2 = row.children[2];
+                    const c3 = row.children[3];
+                    const c4 = row.children[4];
+                    
+                    const idCell = c1 ? safeLowerCase(c1.textContent || c1.innerText) : '';
+                    const nameCell = c2 ? safeLowerCase(c2.textContent || c2.innerText) : '';
+                    const addressCell = c3 ? safeLowerCase(c3.textContent || c3.innerText) : '';
+                    const kurumIdCell = c4 ? safeLowerCase(c4.textContent || c4.innerText) : '';
+                    
+                    const matches = idCell.includes(query) || 
+                                    nameCell.includes(query) || 
+                                    addressCell.includes(query) || 
+                                    kurumIdCell.includes(query);
+                                    
+                    row.style.display = matches ? '' : 'none';
+                });
+            } catch (err) {
+                console.error("Search failed:", err);
+            }
+        });
+    }
+
+    // Bulk Delete UI handlers
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.institution-checkbox');
+    const btnBulkDelete = document.getElementById('btnBulkDelete');
+    const selectedCount = document.getElementById('selectedCount');
+    
+    if (selectAll && btnBulkDelete) {
+        function updateBulkDeleteButton() {
+            const checkedCount = document.querySelectorAll('.institution-checkbox:checked').length;
+            if (checkedCount > 0) {
+                btnBulkDelete.style.display = '';
+                selectedCount.textContent = checkedCount;
+            } else {
+                btnBulkDelete.style.display = 'none';
+            }
+        }
+        
+        selectAll.addEventListener('change', function() {
+            const isChecked = this.checked;
+            checkboxes.forEach(cb => {
+                const row = cb.closest('tr');
+                if (row && row.style.display !== 'none') {
+                    cb.checked = isChecked;
+                }
+            });
+            updateBulkDeleteButton();
+        });
+        
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', updateBulkDeleteButton);
+        });
+    }
+
+    // Client-side Column Sorting logic
+    const table = document.querySelector('.col-md-8 .table');
+    const tbody = table ? table.querySelector('tbody') : null;
+    const headers = table ? table.querySelectorAll('th.sortable') : [];
+    let currentColumn = '';
+    let isAsc = true;
+    
+    headers.forEach(header => {
+        header.style.cursor = 'pointer';
+        header.addEventListener('click', function() {
+            try {
+                const column = this.getAttribute('data-column');
+                const columnIndex = Array.from(this.parentNode.children).indexOf(this);
+                
+                if (currentColumn === column) {
+                    isAsc = !isAsc;
+                } else {
+                    currentColumn = column;
+                    isAsc = true;
+                }
+                
+                // Reset all icons
+                headers.forEach(h => {
+                    const icon = h.querySelector('i');
+                    if (icon) {
+                        icon.className = 'fas fa-sort text-muted ms-1';
+                    }
+                });
+                
+                // Set current active icon
+                const activeIcon = this.querySelector('i');
+                if (activeIcon) {
+                    activeIcon.className = isAsc ? 'fas fa-sort-up ms-1' : 'fas fa-sort-down ms-1';
+                }
+                
+                if (!tbody) return;
+                
+                // Sort rows
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+                rows.sort((a, b) => {
+                    const cellA = a.children[columnIndex];
+                    const cellB = b.children[columnIndex];
+                    
+                    let valA = cellA ? (cellA.textContent || cellA.innerText || '').trim() : '';
+                    let valB = cellB ? (cellB.textContent || cellB.innerText || '').trim() : '';
+                    
+                    if (column === 'id') {
+                        return isAsc ? (parseInt(valA) - parseInt(valB)) : (parseInt(valB) - parseInt(valA));
+                    }
+                    
+                    return isAsc ? valA.localeCompare(valB, 'tr') : valB.localeCompare(valA, 'tr');
+                });
+                
+                // Re-append sorted rows
+                rows.forEach(row => tbody.appendChild(row));
+            } catch (err) {
+                console.error("Sorting failed:", err);
+            }
+        });
+    });
+}
+
+// Immediate execution or fallback to DOMContentLoaded
+if (document.readyState !== 'loading') {
+    initKurumlarPage();
+} else {
+    document.addEventListener('DOMContentLoaded', initKurumlarPage);
+}
 </script>
 
 <?php include '../includes/footer.php'; ?>

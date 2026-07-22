@@ -28,7 +28,8 @@ $type_titles = [
     'boyler_tanki' => 'Boyler Tankı Periyodik Kontrol Raporu',
     'jenarator' => 'Jeneratör Periyodik Kontrol Raporu',
     'kamera_bakim' => 'Kamera Bakım Raporu',
-    'yangin_tesisat' => 'Yangın Tesisatı Güvenliği Raporu'
+    'yangin_tesisat' => 'Yangın Tesisatı Güvenliği Raporu',
+    'katodik_koruma' => 'Galvanik Anotlu Katodik Koruma Ölçüm Raporu'
 ];
 
 if (!isset($type_titles[$type])) {
@@ -82,6 +83,9 @@ try {
             break;
         case 'yangin_tesisat':
             $stmt = $pdo->prepare("SELECT r.*, ap.adi_soyadi FROM yangin_tesisat_reports r LEFT JOIN authorized_persons ap ON r.authorized_person_id = ap.id WHERE r.id = ? AND r.kurum_id = ?");
+            break;
+        case 'katodik_koruma':
+            $stmt = $pdo->prepare("SELECT r.*, ap.adi_soyadi FROM katodik_koruma_reports r LEFT JOIN authorized_persons ap ON r.authorized_person_id = ap.id WHERE r.id = ? AND r.kurum_id = ?");
             break;
     }
     
@@ -300,6 +304,20 @@ try {
                     <strong>İç Tesisat Dağıtım Panoları Özeti:</strong>
                     <ul style="margin: 4px 0; padding-left: 18px;">
                         <li>Kontrol Edilen Dağıtım/Tali Pano Sayısı: <strong><?php echo $countPanels; ?> adet</strong></li>
+                    </ul>
+                </div>
+            <?php endif; ?>
+
+            <?php if ($type === 'katodik_koruma'): 
+                // Fetch cathodic protection measurements count
+                $stmt_m = $pdo->prepare("SELECT COUNT(*) FROM katodik_koruma_measurements WHERE report_id = ?");
+                $stmt_m->execute([$id]);
+                $countKK = $stmt_m->fetchColumn();
+                ?>
+                <div style="background-color: #fdfdfd; border: 1px solid #ccc; padding: 8px; margin-bottom: 8px;">
+                    <strong>Katodik Koruma Ölçümleri Özeti:</strong>
+                    <ul style="margin: 4px 0; padding-left: 18px;">
+                        <li>Kontrol Edilen Ölçü Kutusu Sayısı: <strong><?php echo $countKK; ?> adet</strong></li>
                     </ul>
                 </div>
             <?php endif; ?>

@@ -11,6 +11,15 @@ if (!isset($_SESSION['active_institution_id'])) {
 $kurum_id = $_SESSION['active_institution_id'];
 $highlight_id = isset($_GET['report_id']) ? (int)$_GET['report_id'] : null;
 
+
+// Handle Delete Action
+if (isset($_GET['action']) && $_GET['action'] === 'delete' && isset($_GET['id'])) {
+    $delete_id = (int)$_GET['id'];
+    $stmt = $pdo->prepare("DELETE FROM genlesme_tanki_reports WHERE id = ? AND kurum_id = ?");
+    $stmt->execute([$delete_id, $kurum_id]);
+    redirect('/pages/results/genlesme_tanki_sonuclar.php');
+}
+
 include '../../includes/header.php';
 ?>
 
@@ -73,6 +82,9 @@ include '../../includes/header.php';
                                     </a>
                                     <a href="/pages/genlesme_tanki_yazdir.php?id=<?php echo $row['id']; ?>" target="_blank" class="btn btn-sm btn-dark">
                                         <i class="fas fa-print me-1"></i> Yazdır
+                                    </a>
+                                    <a href="?action=delete&id=<?php echo $row['id']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Bu raporu silmek istediğinize emin misiniz?')">
+                                        <i class="fas fa-trash-alt me-1"></i> Kaldır
                                     </a>
                                 </div>
                             </td>

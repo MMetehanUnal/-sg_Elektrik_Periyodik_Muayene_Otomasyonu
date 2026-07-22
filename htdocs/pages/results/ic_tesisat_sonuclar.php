@@ -11,6 +11,15 @@ if (!isset($_SESSION['active_institution_id'])) {
 $kurum_id = $_SESSION['active_institution_id'];
 $highlight_id = isset($_GET['report_id']) ? (int) $_GET['report_id'] : null;
 
+
+// Handle Delete Action
+if (isset($_GET['action']) && $_GET['action'] === 'delete' && isset($_GET['id'])) {
+    $delete_id = (int)$_GET['id'];
+    $stmt = $pdo->prepare("DELETE FROM internal_installation_reports WHERE id = ? AND kurum_id = ?");
+    $stmt->execute([$delete_id, $kurum_id]);
+    redirect('/pages/results/ic_tesisat_sonuclar.php');
+}
+
 include '../../includes/header.php';
 ?>
 
@@ -29,6 +38,12 @@ include '../../includes/header.php';
 <?php endif; ?>
 
 <div class="card shadow-sm">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <span class="fw-bold">Rapor Listesi</span>
+        <a href="/pages/forms/ic_tesisat_kontrol.php" class="btn btn-sm btn-primary">
+            <i class="fas fa-plus me-1"></i> Yeni Rapor Ekle
+        </a>
+    </div>
     <div class="card-body">
         <div class="table-responsive">
             <table class="table table-hover align-middle">
@@ -37,7 +52,7 @@ include '../../includes/header.php';
                         <th>Rapor No</th>
                         <th>Firma Adı Eki</th>
                         <th>Rapor Tarihi</th>
-                        <th>İşlemler</th>
+                        <th class="text-center">İşlemler</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -58,18 +73,20 @@ include '../../includes/header.php';
                                 <?php echo date('d.m.Y', strtotime($row['report_date'])); ?>
                             </td>
                             <td>
-                                <a href="/pages/results/ic_tesisat_panel_sonuclar.php?report_id=<?php echo $row['id']; ?>"
-                                    class="btn btn-sm btn-success">
-                                    <i class="fas fa-layer-group me-1"></i> Pano Sonuçları (5 & 6)
-                                </a>
-                                <a href="/pages/forms/ic_tesisat_kontrol.php?id=<?php echo $row['id']; ?>"
-                                    class="btn btn-sm btn-primary">
-                                    <i class="fas fa-edit me-1"></i> Formu Aç
-                                </a>
-                                <a href="/pages/ic_tesisat_yazdir.php?id=<?php echo $row['id']; ?>" target="_blank"
-                                    class="btn btn-sm btn-dark">
-                                    <i class="fas fa-print me-1"></i> Yazdır
-                                </a>
+                                <div class="btn-group">
+                                    <a href="/pages/forms/ic_tesisat_kontrol.php?id=<?php echo $row['id']; ?>" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-edit me-1"></i> Düzenle
+                                    </a>
+                                    <a href="/pages/results/ic_tesisat_panel_sonuclar.php?report_id=<?php echo $row['id']; ?>" class="btn btn-sm btn-success">
+                                        <i class="fas fa-layer-group me-1"></i> Pano Sonuçları
+                                    </a>
+                                    <a href="/pages/ic_tesisat_yazdir.php?id=<?php echo $row['id']; ?>" target="_blank" class="btn btn-sm btn-dark">
+                                        <i class="fas fa-print me-1"></i> Yazdır
+                                    </a>
+                                    <a href="?action=delete&id=<?php echo $row['id']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Bu raporu silmek istediğinize emin misiniz?')">
+                                        <i class="fas fa-trash-alt me-1"></i> Kaldır
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                     <?php endwhile; ?>

@@ -11,6 +11,15 @@ if (!isset($_SESSION['active_institution_id'])) {
 $kurum_id = $_SESSION['active_institution_id'];
 $highlight_id = isset($_GET['report_id']) ? (int)$_GET['report_id'] : null;
 
+
+// Handle Delete Action
+if (isset($_GET['action']) && $_GET['action'] === 'delete' && isset($_GET['id'])) {
+    $delete_id = (int)$_GET['id'];
+    $stmt = $pdo->prepare("DELETE FROM grounding_reports WHERE id = ? AND kurum_id = ?");
+    $stmt->execute([$delete_id, $kurum_id]);
+    redirect('/pages/results/topraklama_sonuclar.php');
+}
+
 include '../../includes/header.php';
 ?>
 
@@ -28,6 +37,12 @@ include '../../includes/header.php';
 <?php endif; ?>
 
 <div class="card shadow-sm">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <span class="fw-bold">Rapor Listesi</span>
+        <a href="/pages/forms/topraklama_kontrol.php" class="btn btn-sm btn-primary">
+            <i class="fas fa-plus me-1"></i> Yeni Rapor Ekle
+        </a>
+    </div>
     <div class="card-body">
         <div class="table-responsive">
             <table class="table table-hover align-middle">
@@ -52,11 +67,20 @@ include '../../includes/header.php';
                             <td><?php echo date('d.m.Y', strtotime($row['report_date'])); ?></td>
                             <td class="text-center">
                                 <div class="btn-group">
+                                    <a href="/pages/forms/topraklama_kontrol.php?id=<?php echo $row['id']; ?>" class="btn btn-sm btn-outline-primary" title="Raporu Düzenle">
+                                        <i class="fas fa-edit"></i> Düzenle
+                                    </a>
                                     <a href="/pages/forms/topraklama_olcumler_5_1.php?report_id=<?php echo $row['id']; ?>" class="btn btn-sm btn-primary">
-                                        <i class="fas fa-edit me-1"></i> 5.1 Ölçümleri
+                                        <i class="fas fa-list me-1"></i> 5.1 Ölçümleri
                                     </a>
                                     <a href="/pages/forms/topraklama_olcumler_5_2.php?report_id=<?php echo $row['id']; ?>" class="btn btn-sm btn-info text-white">
-                                        <i class="fas fa-edit me-1"></i> 5.2 Ölçümleri
+                                        <i class="fas fa-list me-1"></i> 5.2 Ölçümleri
+                                    </a>
+                                    <a href="/pages/rapor_yazdir.php?id=<?php echo $row['id']; ?>" target="_blank" class="btn btn-sm btn-dark">
+                                        <i class="fas fa-print me-1"></i> Yazdır
+                                    </a>
+                                    <a href="?action=delete&id=<?php echo $row['id']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Bu raporu silmek istediğinize emin misiniz?')">
+                                        <i class="fas fa-trash-alt me-1"></i> Kaldır
                                     </a>
                                 </div>
                             </td>

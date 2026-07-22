@@ -315,6 +315,9 @@ include '../../includes/header.php';
 
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">Yıldırımdan Korunma Kontrol Formu</h1>
+    <a href="/pages/raporlar.php" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Vazgeç ve Raporlara Dön
+    </a>
 </div>
 
 <?php if (isset($_GET['status']) && $_GET['status'] == 'success'): ?>

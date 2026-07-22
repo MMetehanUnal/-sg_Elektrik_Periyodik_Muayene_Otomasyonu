@@ -12,6 +12,37 @@ if (!isset($_SESSION['active_institution_id'])) {
 }
 $kurum_id = $_SESSION['active_institution_id'];
 
+// Handle Delete Action
+if (isset($_GET['action']) && $_GET['action'] === 'delete' && isset($_GET['id']) && isset($_GET['type'])) {
+    $delete_id = (int)$_GET['id'];
+    $type = cleanInput($_GET['type']);
+    
+    $table_map = [
+        'topraklama' => 'grounding_reports',
+        'ic_tesisat' => 'internal_installation_reports',
+        'yildirim' => 'lightning_protection_reports',
+        'sihhi_tesisat' => 'sihhi_tesisat_reports',
+        'gaz_tesisat' => 'gaz_tesisat_reports',
+        'isinma_tesisat' => 'isinma_tesisat_reports',
+        'genlesme_tanki' => 'genlesme_tanki_reports',
+        'engelli_rampasi' => 'engelli_rampasi_reports',
+        'boyler_tanki' => 'boyler_tanki_reports',
+        'jenarator' => 'jenarator_reports',
+        'kamera_bakim' => 'kamera_bakim_reports',
+        'yangin' => 'fire_detection_reports',
+        'katodik_koruma' => 'katodik_koruma_reports',
+        'yangin_tesisat' => 'fire_safety_reports'
+    ];
+    
+    if (isset($table_map[$type])) {
+        $table = $table_map[$type];
+        $stmt = $pdo->prepare("DELETE FROM {$table} WHERE id = ? AND kurum_id = ?");
+        $stmt->execute([$delete_id, $kurum_id]);
+    }
+    
+    redirect('raporlar.php');
+}
+
 include '../includes/header.php';
 ?>
 
@@ -74,9 +105,11 @@ include '../includes/header.php';
                         (SELECT id, report_no COLLATE utf8mb4_general_ci as report_no, report_date, control_reason COLLATE utf8mb4_general_ci as control_reason, result COLLATE utf8mb4_general_ci as result, authorized_person_id, 'kamera_bakim' as type, firma_adi_eki COLLATE utf8mb4_general_ci as firma_adi_eki FROM kamera_bakim_reports WHERE kurum_id = ?)
                         UNION ALL
                         (SELECT id, report_no COLLATE utf8mb4_general_ci as report_no, report_date, control_reason COLLATE utf8mb4_general_ci as control_reason, result COLLATE utf8mb4_general_ci as result, authorized_person_id, 'yangin_tesisat' as type, firma_adi_eki COLLATE utf8mb4_general_ci as firma_adi_eki FROM yangin_tesisat_reports WHERE kurum_id = ?)
+                        UNION ALL
+                        (SELECT id, report_no COLLATE utf8mb4_general_ci as report_no, report_date, control_reason COLLATE utf8mb4_general_ci as control_reason, result COLLATE utf8mb4_general_ci as result, authorized_person_id, 'katodik_koruma' as type, firma_adi_eki COLLATE utf8mb4_general_ci as firma_adi_eki FROM katodik_koruma_reports WHERE kurum_id = ?)
                         ORDER BY report_date DESC
                     ");
-                    $stmt->execute([$kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id]);
+                    $stmt->execute([$kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id, $kurum_id]);
                     while ($row = $stmt->fetch()):
                         $stmt_ap = $pdo->prepare("SELECT adi_soyadi FROM authorized_persons WHERE id = ?");
                         $stmt_ap->execute([$row['authorized_person_id']]);
@@ -100,6 +133,7 @@ include '../includes/header.php';
                                 elseif ($row['type'] == 'jenarator') echo 'Jeneratör';
                                 elseif ($row['type'] == 'kamera_bakim') echo 'Kamera Bakım';
                                 elseif ($row['type'] == 'yangin_tesisat') echo 'Yangın Tesisatı';
+                                elseif ($row['type'] == 'katodik_koruma') echo 'Katodik Koruma';
                                 else echo 'Yangın Algılama';
                             ?>">
                                 <?php echo htmlspecialchars($row['report_no']); ?>
@@ -129,6 +163,8 @@ include '../includes/header.php';
                                         echo 'Kamera Bakım';
                                     elseif ($row['type'] == 'yangin_tesisat')
                                         echo 'Yangın Tesisatı';
+                                    elseif ($row['type'] == 'katodik_koruma')
+                                        echo 'Katodik Koruma';
                                     else
                                         echo 'Yangın Algılama';
                                     ?>
@@ -311,6 +347,19 @@ include '../includes/header.php';
                                             class="btn btn-sm btn-outline-secondary" title="Sonuçları Düzenle">
                                             <i class="fas fa-list-check"></i>
                                         </a>
+                                    <?php elseif ($row['type'] == 'katodik_koruma'): ?>
+                                        <a href="katodik_koruma_yazdir.php?id=<?php echo $row['id']; ?>" target="_blank"
+                                            class="btn btn-sm btn-outline-dark" title="Yazdır/Görüntüle">
+                                            <i class="fas fa-print"></i>
+                                        </a>
+                                        <a href="forms/katodik_koruma_kontrol.php?id=<?php echo $row['id']; ?>"
+                                            class="btn btn-sm btn-outline-primary" title="Raporu Düzenle">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="results/katodik_koruma_sonuclar.php?report_id=<?php echo $row['id']; ?>"
+                                            class="btn btn-sm btn-outline-secondary" title="Sonuçları Düzenle">
+                                            <i class="fas fa-table"></i>
+                                        </a>
                                     <?php else: ?>
                                         <a href="yangin_tesisat_yazdir.php?id=<?php echo $row['id']; ?>" target="_blank"
                                             class="btn btn-sm btn-outline-dark" title="Yazdır/Görüntüle">
@@ -325,6 +374,12 @@ include '../includes/header.php';
                                             <i class="fas fa-table"></i>
                                         </a>
                                     <?php endif; ?>
+                                    <a href="?action=delete&type=<?php echo htmlspecialchars($row['type']); ?>&id=<?php echo $row['id']; ?>" 
+                                       class="btn btn-sm btn-outline-danger" 
+                                       title="Raporu Kaldır" 
+                                       onclick="return confirm('Bu raporu silmek istediğinize emin misiniz?')">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </a>
                                 </div>
                             </td>
                         </tr>

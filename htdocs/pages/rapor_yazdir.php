@@ -553,9 +553,7 @@ function renderHeader()
 
                         <div class="section-title">8. SONUÇ VE KANAAT</div>
                         <div style="border: 1px solid black; padding: 5px;">
-                            Periyodik kontrol tarihi itibariyle yukarıda teknik özellikleri belirtilen <b>AG Topraklama
-                                Tesisatı</b>
-                            muayenesi sonrasında mevcut şartlar altında <b>kullanımı 1 yıl süreyle;</b><br>
+                            Periyodik kontrol tarihi itibariyle yukarıda teknik özellikleri belirtilen <b>AG Topraklama Tesisatı</b> muayenesi sonrasında mevcut şartlar altında <b>kullanımı 1 yıl süreyle;</b><br>
                             <div style="margin: 5px 0; font-size: 14px; font-weight: bold;">
                                 <?php if (isset($data['result']) && ($data['result'] == 'UYGUNDUR' || $data['result'] == 'GÜVENLİDİR')): ?>
                                     KULLANIMI UYGUNDUR
@@ -563,24 +561,6 @@ function renderHeader()
                                     KULLANIMI UYGUN DEĞİLDİR
                                 <?php endif; ?>
                             </div>
-                            Tespit edilen hafif kusurların bir sonraki periyodik kontrol tarihine kadar giderilmesi
-                            gereklidir.<br>
-                            (*)Bu not, sadece hafif kusur tespit edilmesi durumunda yazılacaktır.<br><br>
-
-                            <b>Uygunluk notu ve ağır kusur açıklamaları:</b><br>
-                            <span class="small-text">
-                                <?php
-                                if (!empty($selected_notes)) {
-                                    foreach ($selected_notes as $note_idx) {
-                                        if (isset($notes_map[$note_idx])) {
-                                            // Bold "Ağır kusur"
-                                            $txt = str_replace('(Ağır kusur)', '(<b>Ağır kusur</b>)', htmlspecialchars($notes_map[$note_idx]));
-                                            echo "<i>$txt</i><br>";
-                                        }
-                                    }
-                                }
-                                ?>
-                            </span>
                         </div>
 
                         <div class="section-title">9. PERİYODİK KONTROLLERİ YAPMAYA YETKİLİ KİŞİ BİLGİLERİ ve ONAY</div>
